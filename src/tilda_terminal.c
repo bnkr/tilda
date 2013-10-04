@@ -36,7 +36,7 @@
 
 #define HTTP_REGEXP "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*"
 
-GdkColor current_palette[TERMINAL_PALETTE_SIZE];
+GdkRGBA current_palette[TERMINAL_PALETTE_SIZE];
 
 static gint start_shell (struct tilda_term_ *tt, gboolean ignore_custom_command);
 static gint tilda_term_config_defaults (tilda_term *tt);
@@ -44,7 +44,6 @@ static void child_exited_cb (GtkWidget *widget, gpointer data);
 static void window_title_changed_cb (GtkWidget *widget, gpointer data);
 static void status_line_changed_cb (GtkWidget *widget, gpointer data);
 static int button_press_cb (GtkWidget *widget, GdkEventButton *event, gpointer data);
-static void status_line_changed_cb (GtkWidget *widget, gpointer data);
 static void iconify_window_cb (GtkWidget *widget, gpointer data);
 static void deiconify_window_cb (GtkWidget *widget, gpointer data);
 static void raise_window_cb (GtkWidget *widget, gpointer data);
@@ -96,6 +95,9 @@ struct tilda_term_ *tilda_term_init (struct tilda_window_ *tw)
     /* Create the scrollbar for the terminal */
     term->scrollbar = gtk_scrollbar_new (GTK_ORIENTATION_VERTICAL,
         gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (VTE_TERMINAL(term->vte_term))));
+
+    /* Initialize to false, we have not yet dropped to the default shell */
+    term->dropped_to_default_shell = FALSE;
 
     /* Set properties of the terminal */
     tilda_term_config_defaults (term);
@@ -208,7 +210,7 @@ static void window_title_changed_cb (GtkWidget *widget, gpointer data)
     g_free (title);
 }
 
-static void status_line_changed_cb (GtkWidget *widget, gpointer data)
+static void status_line_changed_cb (GtkWidget *widget, G_GNUC_UNUSED gpointer data)
 {
     DEBUG_FUNCTION ("status_line_changed_cb");
     DEBUG_ASSERT (widget != NULL);
@@ -216,7 +218,7 @@ static void status_line_changed_cb (GtkWidget *widget, gpointer data)
     g_print ("Status = `%s'.\n", vte_terminal_get_status_line (VTE_TERMINAL(widget)));
 }
 
-static void iconify_window_cb (GtkWidget *widget, gpointer data)
+static void iconify_window_cb (G_GNUC_UNUSED GtkWidget *widget, gpointer data)
 {
     DEBUG_FUNCTION ("iconify_window_cb");
     DEBUG_ASSERT (data != NULL);
@@ -226,7 +228,7 @@ static void iconify_window_cb (GtkWidget *widget, gpointer data)
             gdk_window_iconify (gtk_widget_get_window ((GTK_WIDGET (data))));
 }
 
-static void deiconify_window_cb (GtkWidget *widget, gpointer data)
+static void deiconify_window_cb (G_GNUC_UNUSED GtkWidget *widget, gpointer data)
 {
     DEBUG_FUNCTION ("deiconify_window_cb");
     DEBUG_ASSERT (data != NULL);
@@ -236,7 +238,7 @@ static void deiconify_window_cb (GtkWidget *widget, gpointer data)
             gdk_window_deiconify (gtk_widget_get_window ((GTK_WIDGET (data))));
 }
 
-static void raise_window_cb (GtkWidget *widget, gpointer data)
+static void raise_window_cb (G_GNUC_UNUSED GtkWidget *widget, gpointer data)
 {
     DEBUG_FUNCTION ("raise_window_cb");
     DEBUG_ASSERT (data != NULL);
@@ -246,7 +248,7 @@ static void raise_window_cb (GtkWidget *widget, gpointer data)
             gdk_window_raise (gtk_widget_get_window (GTK_WIDGET (data)));
 }
 
-static void lower_window_cb (GtkWidget *widget, gpointer data)
+static void lower_window_cb (G_GNUC_UNUSED GtkWidget *widget, gpointer data)
 {
     DEBUG_FUNCTION ("lower_window_cb");
     DEBUG_ASSERT (data != NULL);
@@ -256,7 +258,7 @@ static void lower_window_cb (GtkWidget *widget, gpointer data)
             gdk_window_lower (gtk_widget_get_window (GTK_WIDGET (data)));
 }
 
-static void maximize_window_cb (GtkWidget *widget, gpointer data)
+static void maximize_window_cb (G_GNUC_UNUSED GtkWidget *widget, gpointer data)
 {
     DEBUG_FUNCTION ("maximize_window_cb");
     DEBUG_ASSERT (data != NULL);
@@ -266,7 +268,7 @@ static void maximize_window_cb (GtkWidget *widget, gpointer data)
             gdk_window_maximize (gtk_widget_get_window (GTK_WIDGET(data)));
 }
 
-static void restore_window_cb (GtkWidget *widget, gpointer data)
+static void restore_window_cb (G_GNUC_UNUSED GtkWidget *widget, gpointer data)
 {
     DEBUG_FUNCTION ("restore_window_cb");
     DEBUG_ASSERT (data != NULL);
@@ -276,7 +278,7 @@ static void restore_window_cb (GtkWidget *widget, gpointer data)
             gdk_window_unmaximize (gtk_widget_get_window (GTK_WIDGET (data)));
 }
 
-static void refresh_window_cb (GtkWidget *widget, gpointer data)
+static void refresh_window_cb (G_GNUC_UNUSED GtkWidget *widget, gpointer data)
 {
     DEBUG_FUNCTION ("refresh_window_cb");
     DEBUG_ASSERT (data != NULL);
@@ -296,7 +298,7 @@ static void refresh_window_cb (GtkWidget *widget, gpointer data)
     }
 }
 
-static void move_window_cb (GtkWidget *widget, guint x, guint y, gpointer data)
+static void move_window_cb (G_GNUC_UNUSED GtkWidget *widgets, guint x, guint y, gpointer data)
 {
     DEBUG_FUNCTION ("move_window_cb");
     DEBUG_ASSERT (data != NULL);
@@ -427,6 +429,20 @@ static gint start_shell (struct tilda_term_ *tt, gboolean ignore_custom_command)
 
 launch_default_shell:
 
+    /* If we have dropped to the default shell before, then this time, we
+     * do not spawn a new shell, but instead close the current shell. This will
+     * cause the current tab to close.
+     */
+    if (tt->dropped_to_default_shell) {
+        gint index = gtk_notebook_page_num (GTK_NOTEBOOK(tt->tw->notebook),
+            tt->hbox);
+        tilda_window_close_tab (tt->tw, index, FALSE);
+        return 0;
+    }
+    if (ignore_custom_command) {
+        tt->dropped_to_default_shell = TRUE;
+    }
+
     /* No custom command, get it from the environment */
     default_command = (gchar *) g_getenv ("SHELL");
 
@@ -517,28 +533,29 @@ static gint tilda_term_config_defaults (tilda_term *tt)
     DEBUG_ASSERT (tt != NULL);
 
     gdouble transparency_level = 0.0;
-    GdkColor fg, bg /*, tint, highlight, cursor, black */;
+    GdkRGBA fg, bg;
     gchar* word_chars;
     gint i;
 
     /** Colors & Palette **/
-    bg.red   =    config_getint ("back_red");
-    bg.green =    config_getint ("back_green");
-    bg.blue  =    config_getint ("back_blue");
+    bg.red   =    GUINT16_TO_FLOAT(config_getint ("back_red"));
+    bg.green =    GUINT16_TO_FLOAT(config_getint ("back_green"));
+    bg.blue  =    GUINT16_TO_FLOAT(config_getint ("back_blue"));
+    bg.alpha =    1.0d;
 
-    fg.red   =    config_getint ("text_red");
-    fg.green =    config_getint ("text_green");
-    fg.blue  =    config_getint ("text_blue");
+    fg.red   =    GUINT16_TO_FLOAT(config_getint ("text_red"));
+    fg.green =    GUINT16_TO_FLOAT(config_getint ("text_green"));
+    fg.blue  =    GUINT16_TO_FLOAT(config_getint ("text_blue"));
+    fg.alpha =    1.0d;
 
-    for(i = 0;i < TERMINAL_PALETTE_SIZE; i++)
-    {
-        current_palette[i].pixel = 0;
-        current_palette[i].red   = config_getnint ("palette", i*3);
-        current_palette[i].green = config_getnint ("palette", i*3+1);
-        current_palette[i].blue  = config_getnint ("palette", i*3+2);
+    for(i = 0;i < TERMINAL_PALETTE_SIZE; i++) {
+        current_palette[i].red   = GUINT16_TO_FLOAT(config_getnint ("palette", i*3));
+        current_palette[i].green = GUINT16_TO_FLOAT(config_getnint ("palette", i*3+1));
+        current_palette[i].blue  = GUINT16_TO_FLOAT(config_getnint ("palette", i*3+2));
+        current_palette[i].alpha = 1.0d;
     }
 
-    vte_terminal_set_colors (VTE_TERMINAL(tt->vte_term), &fg, &bg, current_palette, TERMINAL_PALETTE_SIZE);
+    vte_terminal_set_colors_rgba (VTE_TERMINAL(tt->vte_term), &fg, &bg, current_palette, TERMINAL_PALETTE_SIZE);
 
     /** Bells **/
     vte_terminal_set_audible_bell (VTE_TERMINAL(tt->vte_term), config_getbool ("bell"));
@@ -662,7 +679,7 @@ menu_preferences_cb (GtkWidget *widget, gpointer data)
 }
 
 static void
-menu_quit_cb (GtkWidget *widget, gpointer data)
+menu_quit_cb (G_GNUC_UNUSED GtkWidget *widget, G_GNUC_UNUSED gpointer data)
 {
     DEBUG_FUNCTION ("menu_quit_cb");
 
@@ -797,7 +814,7 @@ static void popup_menu (tilda_window *tw, tilda_term *tt)
     gtk_widget_show_all(menu);
 }
 
-static int button_press_cb (GtkWidget *widget, GdkEventButton *event, gpointer data)
+static int button_press_cb (G_GNUC_UNUSED GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
     DEBUG_FUNCTION ("button_press_cb");
     DEBUG_ASSERT (data != NULL);
@@ -828,7 +845,7 @@ static int button_press_cb (GtkWidget *widget, GdkEventButton *event, gpointer d
             xpad = border.left;
             ypad = border.bottom;
             match = vte_terminal_match_check (terminal,
-                    (event->x - ypad) /
+                    (event->x - xpad) /
                     vte_terminal_get_char_width (terminal),
                     (event->y - ypad) /
                     vte_terminal_get_char_height (terminal),
@@ -838,7 +855,7 @@ static int button_press_cb (GtkWidget *widget, GdkEventButton *event, gpointer d
             if (match != NULL)
             {
 #if DEBUG
-                g_print ("Got a Ctrl+Left Click -- Matched: `%s' (%d)\n", match, tag);
+                g_print ("Got a Left Click -- Matched: `%s' (%d)\n", match, tag);
 #endif
                 web_browser_cmd = g_strescape (config_getstr ("web_browser"), NULL);
                 cmd = g_strdup_printf ("%s %s", web_browser_cmd, match);

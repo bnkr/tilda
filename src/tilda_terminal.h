@@ -31,6 +31,11 @@ struct tilda_term_
     GtkWidget *hbox;
     GtkWidget *scrollbar;
     GRegex *http_regexp;
+    /* We remember if we have already dropped to the default
+     * shell before, if so, then we know that this time we can
+     * exit the program.
+     */
+    gboolean dropped_to_default_shell;
 
     struct tilda_window_ *tw;
 };
@@ -73,7 +78,7 @@ void tilda_term_set_scrollbar_position (tilda_term *tt, enum tilda_term_scrollba
 
 #define TERMINAL_PALETTE_SIZE 16
 
-extern GdkColor current_palette[TERMINAL_PALETTE_SIZE];
+extern GdkRGBA current_palette[TERMINAL_PALETTE_SIZE];
 
 G_END_DECLS
 

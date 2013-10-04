@@ -1,5 +1,8 @@
 /* vim: set ts=4 sts=4 sw=4 expandtab textwidth=112: */
 
+#define _POSIX_SOURCE /* feature test macro for fileno */
+#define _XOPEN_SOURCE /* feature test macro for fsync */
+
 #include <tilda-config.h>
 #include <debug.h>
 
@@ -75,7 +78,7 @@ static cfg_opt_t config_opts[] = {
     CFG_INT("palette_scheme", 0, CFGF_NONE),
     /* The default monitor number is 0 */
     CFG_INT("show_on_monitor_number", 0, CFGF_NONE),
- 
+
     /* int list */
     CFG_INT_LIST("palette", "{\
         0x2e2e, 0x3434, 0x3636,\
@@ -147,7 +150,7 @@ static cfg_opt_t config_opts[] = {
 #define CONFIGS_SAME   0
 #define CONFIG1_NEWER  1
 
-static gboolean compare_config_versions (const gchar *config1, const gchar *config2);
+static gboolean compare_config_versions (const gchar *config1, const gchar *config2) G_GNUC_UNUSED;
 
 
 
@@ -218,6 +221,22 @@ gint config_setnint(const gchar *key, const gint val, const guint idx)
 	return 0;
 }
 
+gint config_setdouble (const gchar *key, const gdouble val) {
+	config_mutex_lock ();
+	cfg_setfloat (tc, key, val);
+	config_mutex_unlock ();
+
+	return 0;
+}
+
+gint config_setndouble (const gchar *key, const gdouble val, const guint idx) {
+	config_mutex_lock ();
+	cfg_setnfloat (tc, key, val, idx);
+	config_mutex_unlock ();
+
+	return 0;
+}
+
 gint config_setstr (const gchar *key, const gchar *val)
 {
 	config_mutex_lock ();
@@ -253,6 +272,26 @@ glong config_getnint(const gchar *key, const guint idx)
 
 	config_mutex_lock ();
 	temp = cfg_getnint (tc, key, idx);
+	config_mutex_unlock ();
+
+	return temp;
+}
+
+gdouble config_getdouble (const gchar* key) {
+	gdouble temp;
+
+	config_mutex_lock ();
+	temp = cfg_getfloat (tc, key);
+	config_mutex_unlock ();
+
+	return temp;
+}
+
+gdouble config_getndouble (const gchar* key, const guint idx) {
+	gdouble temp;
+
+	config_mutex_lock ();
+	temp = cfg_getnfloat (tc, key, idx);
 	config_mutex_unlock ();
 
 	return temp;

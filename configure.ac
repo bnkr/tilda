@@ -3,7 +3,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([Tilda],[1.1.8],[https://github.com/lanoxx/tilda/issues],[tilda],[https://github.com/lanoxx/tilda])
+AC_INIT([Tilda],[1.2-alpha],[https://github.com/lanoxx/tilda/issues],[tilda],[https://github.com/lanoxx/tilda])
 AM_INIT_AUTOMAKE
 
 # We are going to use silent builds which have a much
@@ -30,31 +30,62 @@ AM_MAINTAINER_MODE([enable])
 # options that are defined below. It also activates several flags to the compile such that it
 # will show more warnings and errors to indicate problems in the source code.
 AC_ARG_ENABLE([maintainer-flags],
-		[AS_HELP_STRING([--enable-maintainer-flags],[enable extra debugging (don't use as user)])])
-
-#' This comment fixes syntax highlighting
+	[AS_HELP_STRING([--enable-maintainer-flags],[\
+            Enables extra debugging; use this option if you want to develope for tilda,
+            but to not use it as an end user if you just want to compile and use tilda. \
+            This option includes the --enable-debug and --enable-debug-functions \
+            options. And sets several CFLAGS to enable more gcc warnings and errors.])])
 
 if test "x$enable_maintainer_flags" = "xyes"; then
 	enable_debug="yes"
 	enable_debug_functions="yes"
-	CFLAGS="$CFLAGS -Wall -Wextra -pedantic -fno-common -Wstrict-aliasing=2"
-	CFLAGS="$CFLAGS -Wshadow -Wmissing-prototypes -Wmissing-declarations"
+	CFLAGS="$CFLAGS \
+            -Wall \
+            -Wextra \
+            -fno-common \
+            -Wstrict-aliasing=2 \
+            -Wshadow \
+            -Wmissing-prototypes \
+            -Wmissing-declarations \
+            -Wcast-align \
+            -Wuninitialized \
+            -Wno-strict-aliasing \
+            -Werror=pointer-arith \
+            -Werror=missing-declarations \
+            -Werror=redundant-decls \
+            -Werror=empty-body \
+            -Werror=format \
+            -Werror=format-security \
+            -Werror=format-nonliteral \
+            -Werror=init-self \
+            -Werror=vla \
+            -DDEBUG \
+           "
 fi
 
 # This registers the option '--enable-debug' in the ./configure script
 # If this option is set, then the the options -g and -ggdb will be
 # passed to the compiler.
-AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug],[enable extra debugging output])])
+AC_ARG_ENABLE([debug],
+	[AS_HELP_STRING([--enable-debug],[Enables extra debugging output and \
+                                      sets debug flags for gdb])])
 
 if test "x$enable_debug" = "xyes"; then
 	AC_DEFINE([DEBUG], [1], [Enable extra debugging output])
 	CFLAGS="$CFLAGS -g -ggdb"
 fi
 
+#Use C99 compilation mode
+CFLAGS="$CFLAGS -std=c99"
+
 # This registers the option '--debug-functions' in the ./configure script
 # If this option is set, then the name of each entered function will be
 # printed on the shell.
-AC_ARG_ENABLE([debug-functions], [AS_HELP_STRING([--enable-debug-functions],[enable function call tracing])])
+AC_ARG_ENABLE([debug-functions],
+	[AS_HELP_STRING([--enable-debug-functions],[Enables function call tracing. \
+							                    When this option is enabled tilda will print \
+												the name of each function that is called to the \
+												console.])])
 
 if test "x$enable_debug_functions" = "xyes"; then
 	AC_DEFINE([DEBUG_FUNCTIONS], [1], [Enable function call tracing])

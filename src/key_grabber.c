@@ -136,6 +136,10 @@ void tilda_window_set_active (tilda_window *tw)
     if (gdk_x11_screen_supports_net_wm_hint (screen,
                                              gdk_atom_intern_static_string ("_NET_ACTIVE_WINDOW")))
     {
+        guint32 timestamp = gtk_get_current_event_time ();
+        if (timestamp == 0) {
+            timestamp = tomboy_keybinder_get_current_event_time ();
+        }
         event.xclient.type = ClientMessage;
         event.xclient.serial = 0;
         event.xclient.send_event = True;
@@ -145,7 +149,7 @@ void tilda_window_set_active (tilda_window *tw)
 
         event.xclient.format = 32;
         event.xclient.data.l[0] = 2; /* pager */
-        event.xclient.data.l[1] = tomboy_keybinder_get_current_event_time(); /* timestamp */
+        event.xclient.data.l[1] = timestamp; /* timestamp */
         event.xclient.data.l[2] = 0;
         event.xclient.data.l[3] = 0;
         event.xclient.data.l[4] = 0;
@@ -156,7 +160,7 @@ void tilda_window_set_active (tilda_window *tw)
     {
         /* The WM doesn't support the EWMH standards. We'll print a warning and
          * try this, though it probably won't work... */
-        g_printerr ("WARNING: Window manager (%s) does not support EWMH hints\n",
+        g_printerr (_("WARNING: Window manager (%s) does not support EWMH hints\n"),
                     gdk_x11_screen_get_window_manager_name (screen));
         XRaiseWindow (x11_display, x11_window);
     }
@@ -250,7 +254,7 @@ void pull (struct tilda_window_ *tw, enum pull_state state)
     }
 }
 
-static void onKeybindingPull (const char *keystring, gpointer user_data)
+static void onKeybindingPull (G_GNUC_UNUSED const char *keystring, gpointer user_data)
 {
 	tilda_window *tw = TILDA_WINDOW(user_data);
 	pull (tw, PULL_TOGGLE);

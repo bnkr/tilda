@@ -13,6 +13,8 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#define _POSIX_SOURCE /* feature test macro for signal functions */
+#define _XOPEN_SOURCE /* feature test macro for popen */
 
 #include <tilda-config.h>
 
@@ -24,6 +26,7 @@
 #include <key_grabber.h> /* for pull */
 #include <wizard.h>
 #include <xerror.h>
+#include <tomboykeybinder.h>
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -224,7 +227,6 @@ static gint remove_stale_lock_files ()
     gchar *remove_file;
     gchar *filename;
     GDir *dir;
-    gint pid;
 
     /* Open the lock directory for reading */
     dir = g_dir_open (lock_dir, 0, NULL);
@@ -238,7 +240,7 @@ static gint remove_stale_lock_files ()
 
     /* For each possible lock file, check if it is a lock, and see if
      * it matches one of the running tildas */
-    while (filename = (gchar*) g_dir_read_name (dir))
+    while ((filename = (gchar*) g_dir_read_name (dir)) != NULL)
     {
         lock = islockfile (filename);
 
@@ -323,8 +325,8 @@ static gboolean parse_cli (int argc, char *argv[])
     /* Check for unknown options, and give a nice message if there are some */
     if (error)
     {
-        const char *msg = _("Error parsing command-line options. Try \"tilda --help\"\nto see all possible options.\n\nError message: %s\n");
-        g_printerr (msg, error->message);
+        g_printerr (_("Error parsing command-line options. Try \"tilda --help\"\nto see all possible options.\n\nError message: %s\n"),
+                    error->message);
 
         exit (EXIT_FAILURE);
     }
@@ -450,7 +452,7 @@ static gint get_instance_number ()
 
     /* Look through every file in the lock directory, and see if it is a lock file.
      * If it is a lock file, store it's instance number in the list. */
-    while (name = (gchar*)g_dir_read_name (dir))
+    while ((name = (gchar*)g_dir_read_name (dir)) != NULL)
     {
         lock = islockfile (name);
 
@@ -477,10 +479,8 @@ static gint get_instance_number ()
     return i;
 }
 
-static void termination_handler (gint signum)
-{
+static void termination_handler (G_GNUC_UNUSED gint signum) {
     DEBUG_FUNCTION ("termination_handler");
-
     gtk_main_quit ();
 }
 
@@ -488,8 +488,7 @@ static void termination_handler (gint signum)
  * This is to do the migration of config files from ~/.tilda to the
  * XDG_*_HOME folders
  */
-static int migrate_config_files(char *old_config_path)
-{
+static void migrate_config_files(char *old_config_path) {
     gchar* old_lock_dir = g_build_filename(old_config_path, "locks", NULL);
     gchar* new_lock_dir = g_build_filename(g_get_user_cache_dir (), "tilda", "locks", NULL);
     gchar* new_config_dir = g_build_filename(g_get_user_config_dir (), "tilda", NULL);
@@ -513,7 +512,7 @@ static void load_custom_css_file () {
         g_get_user_config_dir (), "tilda", "style.css", NULL);
     if (g_file_test (cssfilename, G_FILE_TEST_EXISTS)) {
         g_print (_("Found style.css in the user config directory, "
-            "applying user css stlye.\n"));
+            "applying user css style.\n"));
         provider = gtk_css_provider_new ();
         gtk_style_context_add_provider_for_screen (
             gdk_screen_get_default(),

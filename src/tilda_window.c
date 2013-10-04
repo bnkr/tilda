@@ -1,5 +1,3 @@
-
-
 /*
  * This is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Library General Public License as published by
@@ -122,7 +120,7 @@ gint toggle_fullscreen_cb (tilda_window *tw)
 {
     DEBUG_FUNCTION ("toggle_fullscreen_cb");
     DEBUG_ASSERT (tw != NULL);
-    
+
 	if (tw->fullscreen != TRUE) {
 		tw->fullscreen = TRUE;
 		gtk_window_fullscreen (GTK_WINDOW (tw->window));
@@ -131,6 +129,10 @@ gint toggle_fullscreen_cb (tilda_window *tw)
 		gtk_window_unfullscreen (GTK_WINDOW (tw->window));
 		tw->fullscreen = FALSE;
 	}
+
+    // It worked. Having this return GDK_EVENT_STOP makes the callback not carry the
+    // keystroke into the vte terminal widget.
+    return GDK_EVENT_STOP;
 }
 
 
@@ -151,9 +153,9 @@ static gint next_tab (tilda_window *tw)
     else
       gtk_notebook_next_page (GTK_NOTEBOOK (tw->notebook));
 
-    // It worked. Having this return true makes the callback not carry the
+    // It worked. Having this return GDK_EVENT_STOP makes the callback not carry the
     // keystroke into the vte terminal widget.
-    return TRUE;
+    return GDK_EVENT_STOP;
 }
 
 static gint prev_tab (tilda_window *tw)
@@ -172,9 +174,9 @@ static gint prev_tab (tilda_window *tw)
     else
       gtk_notebook_prev_page (GTK_NOTEBOOK (tw->notebook));
 
-    // It worked. Having this return true makes the callback not carry the
+    // It worked. Having this return GDK_EVENT_STOP makes the callback not carry the
     // keystroke into the vte terminal widget.
-    return TRUE;
+    return GDK_EVENT_STOP;
 }
 
 static gint move_tab_left (tilda_window *tw)
@@ -205,9 +207,9 @@ static gint move_tab_left (tilda_window *tw)
                                   new_page_index);
     }
 
-    // It worked. Having this return true makes the callback not carry the
+    // It worked. Having this return GDK_EVENT_STOP makes the callback not carry the
     // keystroke into the vte terminal widget.
-    return TRUE;
+    return GDK_EVENT_STOP;
 }
 
 static gint move_tab_right (tilda_window *tw)
@@ -231,12 +233,12 @@ static gint move_tab_right (tilda_window *tw)
                                   current_page_index - 1);
     }
 
-    // It worked. Having this return true makes the callback not carry the
+    // It worked. Having this return GDK_EVENT_STOP makes the callback not carry the
     // keystroke into the vte terminal widget.
-    return TRUE;
+    return GDK_EVENT_STOP;
 }
 
-static void focus_term (GtkWidget *widget, gpointer data)
+static gboolean focus_term (GtkWidget *widget, gpointer data)
 {
     DEBUG_FUNCTION ("focus_term");
     DEBUG_ASSERT (data != NULL);
@@ -252,13 +254,17 @@ static void focus_term (GtkWidget *widget, gpointer data)
         list = gtk_container_get_children (GTK_CONTAINER(box));
         gtk_widget_grab_focus (list->data);
     }
+
+    // It worked. Having this return GDK_EVENT_STOP makes the callback not carry the
+    // keystroke into the vte terminal widget.
+    return GDK_EVENT_STOP;
 }
 
 static gboolean auto_hide_tick(gpointer data)
 {
     DEBUG_FUNCTION ("auto_hide_tick");
     DEBUG_ASSERT (data != NULL);
-    
+
     tilda_window *tw = TILDA_WINDOW(data);
     tw->auto_hide_current_time += tw->timer_resolution;
     if ((tw->auto_hide_current_time >= tw->auto_hide_max_time) || tw->current_state == UP)
@@ -267,6 +273,7 @@ static gboolean auto_hide_tick(gpointer data)
         tw->auto_hide_tick_handler = 0;
         return FALSE;
     }
+
     return TRUE;
 }
 
@@ -276,7 +283,7 @@ static void start_auto_hide_tick(tilda_window *tw)
     // If the delay is less or equal to 1000ms then the timer is not precise
     // enough, because it takes already about 200ms to register it, so we
     // rather sleep for the given amount of time.
-    const int MAX_SLEEP_TIME = 1000;
+    const guint32 MAX_SLEEP_TIME = 1000;
 
     if ((tw->auto_hide_tick_handler == 0) && (tw->disable_auto_hide == FALSE)) {
         /* If there is not timer registered yet, then the auto_hide_tick_handler
@@ -308,45 +315,52 @@ static void stop_auto_hide_tick(tilda_window *tw)
     }
 }
 
-static void mouse_enter (GtkWidget *widget, GdkEvent *event, gpointer data)
+static gboolean mouse_enter (GtkWidget *widget, G_GNUC_UNUSED GdkEvent *event, gpointer data)
 {
     DEBUG_FUNCTION ("mouse_enter");
     DEBUG_ASSERT (data != NULL);
     DEBUG_ASSERT (widget != NULL);
-    
+
+    GdkEventCrossing *ev = (GdkEventCrossing*)event;
     tilda_window *tw = TILDA_WINDOW(data);
     stop_auto_hide_tick(tw);
-    if (tw->disable_auto_hide == FALSE)
+    if (tw->disable_auto_hide == FALSE && ev->time != 0)
         tilda_window_set_active(tw);
+
+    return GDK_EVENT_STOP;
 }
- 
-static void mouse_leave (GtkWidget *widget, GdkEvent *event, gpointer data)
+
+static gboolean mouse_leave (GtkWidget *widget, G_GNUC_UNUSED GdkEvent *event, gpointer data)
 {
     DEBUG_FUNCTION ("mouse_leave");
     DEBUG_ASSERT (data != NULL);
     DEBUG_ASSERT (widget != NULL);
-    
+
     GdkEventCrossing *ev = (GdkEventCrossing*)event;
     tilda_window *tw = TILDA_WINDOW(data);
-    
+
     if ((ev->mode != GDK_CROSSING_NORMAL) || (tw->auto_hide_on_mouse_leave == FALSE))
-        return;
-    
+        return GDK_EVENT_STOP;
+
     start_auto_hide_tick(tw);
+
+    return GDK_EVENT_STOP;
 }
 
-static void focus_out_event_cb (GtkWidget *widget, GdkEvent *event, gpointer data)
+static gboolean focus_out_event_cb (GtkWidget *widget, G_GNUC_UNUSED GdkEvent *event, gpointer data)
 {
     DEBUG_FUNCTION ("focus_out_event_cb");
     DEBUG_ASSERT (data != NULL);
     DEBUG_ASSERT (widget != NULL);
-    
+
     tilda_window *tw = TILDA_WINDOW(data);
-    
+
     if (tw->auto_hide_on_focus_lost == FALSE)
-        return;
-    
+        return GDK_EVENT_PROPAGATE;
+
     start_auto_hide_tick(tw);
+
+    return GDK_EVENT_PROPAGATE;
 }
 
 static void goto_tab (tilda_window *tw, guint i)
@@ -357,14 +371,14 @@ static void goto_tab (tilda_window *tw, guint i)
     gtk_notebook_set_current_page (GTK_NOTEBOOK (tw->notebook), i);
 }
 
-static gboolean goto_tab_generic (tilda_window *tw, gint tab_number)
+static gboolean goto_tab_generic (tilda_window *tw, guint tab_number)
 {
     DEBUG_FUNCTION ("goto_tab_generic");
     DEBUG_ASSERT (tw != NULL);
 
     if (g_list_length (tw->terms) > (tab_number-1))
     {
-        goto_tab (tw, g_list_length (tw->terms) - tab_number);
+        goto_tab (tw, tab_number - 1);
         return TRUE;
     }
 
@@ -422,34 +436,34 @@ static gint cpaste (tilda_window *tw)
 }
 
 /* Tie a single keyboard shortcut to a callback function */
-gint tilda_add_config_accelerator(const gchar* key, GCallback callback_func, tilda_window *tw)
+static gint tilda_add_config_accelerator(const gchar* key, GCallback callback_func, tilda_window *tw)
 {
     guint accel_key;
     GdkModifierType accel_mods;
     GClosure *temp;
- 
+
     gtk_accelerator_parse (config_getstr(key), &accel_key, &accel_mods);
     if (! ((accel_key == 0) && (accel_mods == 0)) )  // make sure it parsed properly
     {
         temp = g_cclosure_new_swap (callback_func, tw, NULL);
         gtk_accel_group_connect (tw->accel_group, accel_key, accel_mods , GTK_ACCEL_VISIBLE, temp);
     }
- 
+
     return 0;
 }
- 
+
 gint tilda_window_setup_keyboard_accelerators (tilda_window *tw)
 {
- 
+
     /* If we already have an tw->accel_group (which would happen if we're redefining accelerators in the config window)
        we want to remove it before creating a new one. */
     if (tw->accel_group != NULL)
         gtk_window_remove_accel_group (GTK_WINDOW (tw->window), tw->accel_group);
- 
+
     /* Create Accel Group to add key codes for quit, next, prev and new tabs */
     tw->accel_group = gtk_accel_group_new ();
     gtk_window_add_accel_group (GTK_WINDOW (tw->window), tw->accel_group);
- 
+
     /* Set up keyboard shortcuts for Exit, Next Tab, Previous Tab,
        Move Tab, Add Tab, Close Tab, Copy, and Paste using key
        combinations defined in the config. */
@@ -463,7 +477,7 @@ gint tilda_window_setup_keyboard_accelerators (tilda_window *tw)
     tilda_add_config_accelerator("copy_key",         G_CALLBACK(ccopy),                          tw);
     tilda_add_config_accelerator("paste_key",        G_CALLBACK(cpaste),                         tw);
     tilda_add_config_accelerator("fullscreen_key",   G_CALLBACK(toggle_fullscreen_cb),           tw);
- 
+
     /* Set up keyboard shortcuts for Goto Tab # using key combinations defined in the config*/
     /* Know a better way? Then you do. */
     tilda_add_config_accelerator("gototab_1_key",  G_CALLBACK(goto_tab_1),  tw);
@@ -476,7 +490,7 @@ gint tilda_window_setup_keyboard_accelerators (tilda_window *tw)
     tilda_add_config_accelerator("gototab_8_key",  G_CALLBACK(goto_tab_8),  tw);
     tilda_add_config_accelerator("gototab_9_key",  G_CALLBACK(goto_tab_9),  tw);
     tilda_add_config_accelerator("gototab_10_key", G_CALLBACK(goto_tab_10), tw);
-    
+
     return 0;
 }
 
@@ -498,11 +512,12 @@ static gint tilda_window_set_icon (tilda_window *tw, gchar *filename)
     return 0;
 }
 
-static gboolean delete_event_callback (GtkWidget *widget,
-                                GdkEvent  *event,
-                                gpointer   user_data)
+static gboolean delete_event_callback (G_GNUC_UNUSED GtkWidget *widget,
+                                G_GNUC_UNUSED GdkEvent  *event,
+                                G_GNUC_UNUSED gpointer   user_data)
 {
     gtk_main_quit ();
+    return FALSE;
 }
 
 /**
@@ -540,10 +555,10 @@ tilda_window *tilda_window_init (const gchar *config_file, const gint instance)
 
     /* Create the main window */
     tw->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-    
+
     /* Generic timer resolution */
     tw->timer_resolution = config_getint("timer_resolution");
-    
+
     /* Auto hide support */
     tw->auto_hide_tick_handler = 0;
     tw->auto_hide_max_time = config_getint("auto_hide_time");
@@ -551,7 +566,7 @@ tilda_window *tilda_window_init (const gchar *config_file, const gint instance)
     tw->auto_hide_on_focus_lost = config_getbool("auto_hide_on_focus_lost");
     tw->disable_auto_hide = FALSE;
 
-	tw->fullscreen = FALSE;
+    tw->fullscreen = FALSE;
 
     /* Set up all window properties */
     if (config_getbool ("pinned"))
@@ -620,6 +635,7 @@ tilda_window *tilda_window_init (const gchar *config_file, const gint instance)
     /* Connect signal handlers */
     g_signal_connect (G_OBJECT(tw->window), "delete-event", G_CALLBACK (delete_event_callback), tw);
     g_signal_connect (G_OBJECT(tw->window), "show", G_CALLBACK (focus_term), tw);
+
     g_signal_connect (G_OBJECT(tw->window), "focus-out-event", G_CALLBACK (focus_out_event_cb), tw);
     g_signal_connect (G_OBJECT(tw->window), "enter-notify-event", G_CALLBACK (mouse_enter), tw);
     g_signal_connect (G_OBJECT(tw->window), "leave-notify-event", G_CALLBACK (mouse_leave), tw);
@@ -636,7 +652,7 @@ tilda_window *tilda_window_init (const gchar *config_file, const gint instance)
     gtk_window_set_default_size (GTK_WINDOW(tw->window), config_getint ("max_width"), config_getint ("max_height"));
     gtk_window_resize (GTK_WINDOW(tw->window), config_getint ("max_width"), config_getint ("max_height"));
 
-	/* Create GDK resources now, to prevent crashes later on */
+    /* Create GDK resources now, to prevent crashes later on */
     gtk_widget_realize (tw->window);
     generate_animation_positions (tw);
 
