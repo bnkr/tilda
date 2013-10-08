@@ -1,3 +1,9 @@
+tilda (1.1.8+bnkr2-1) experimental; urgency=low
+
+  * Enable scrollbar in tabs so they don't mess up window sizing.
+
+ -- James Webber <bunkerprivate@gmail.com>  Tue, 08 Oct 2013 10:59:36 +0100
+
 tilda (1.1.8+bnkr1-1) experimental; urgency=low
 
   * Snapshot of changes from 1bc630e..a0012ad.
