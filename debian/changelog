@@ -1,3 +1,10 @@
+tilda (1.1.8+bnkr3-1) experimental; urgency=low
+
+  * Force window size back to defaults when unfullscreening to work around
+    size being wrong after tabbing out.
+
+ -- James Webber <bunkerprivate@gmail.com>  Fri, 18 Oct 2013 20:03:45 +0100
+
 tilda (1.1.8+bnkr2-1) experimental; urgency=low
 
   * Enable scrollbar in tabs so they don't mess up window sizing.
