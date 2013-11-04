@@ -17,6 +17,8 @@
 
 #include <tilda-config.h>
 
+#include <errno.h>
+
 #include <debug.h>
 #include <tilda.h>
 #include <wizard.h>
@@ -357,6 +359,7 @@ static void wizard_closed ()
     const gchar *gototab_8_key = GET_BUTTON_LABEL("button_keybinding_gototab8");
     const gchar *gototab_9_key = GET_BUTTON_LABEL("button_keybinding_gototab9");
     const gchar *gototab_10_key = GET_BUTTON_LABEL("button_keybinding_gototab10");
+    const gchar *fullscreen_key = GET_BUTTON_LABEL("button_keybinding_fullscreen");
 
     const GtkWidget *entry_custom_command =
         GTK_WIDGET (gtk_builder_get_object(xml, "entry_custom_command"));
@@ -409,6 +412,8 @@ static void wizard_closed ()
         return;
     if (!validate_keybinding(gototab_10_key, wizard_window, _("The keybinding you chose for \"Go To Tab 10\" is invalid. Please choose another.")))
         return;
+    if (!validate_keybinding(fullscreen_key, wizard_window, _("The keybinding you chose for \"Toggle Fullscreen\" is invalid. Please choose another.")))
+        return;
 
     /* Now that our shortcuts are validated, store them back into the config. */
     config_setstr ("key", key);
@@ -431,6 +436,7 @@ static void wizard_closed ()
     config_setstr ("gototab_8_key",  gototab_8_key);
     config_setstr ("gototab_9_key",  gototab_9_key);
     config_setstr ("gototab_10_key", gototab_10_key);
+    config_setstr ("fullscreen_key", fullscreen_key);
 
     /* Now that they're in the config, reset the keybindings right now. */
     tilda_window_setup_keyboard_accelerators(tw);
@@ -682,7 +688,18 @@ static void window_title_change_all ()
         title = get_window_title (tt->vte_term);
         page = gtk_notebook_get_nth_page (GTK_NOTEBOOK (tw->notebook), i);
         label = gtk_notebook_get_tab_label (GTK_NOTEBOOK (tw->notebook), page);
-        gtk_label_set_label (GTK_LABEL(label), title);
+
+        guint length = config_getint ("title_max_length");
+
+        if(config_getbool("title_max_length_flag") && strlen(title) > length) {
+            gchar *titleOffset = title + strlen(title) - length;
+            gchar *shortTitle = g_strdup_printf ("...%s", titleOffset);
+            gtk_label_set_text (GTK_LABEL(label), shortTitle);
+            g_free(shortTitle);
+        } else {
+            gtk_label_set_text (GTK_LABEL(label), title);
+        }
+
         g_free (title);
     }
 }
@@ -894,6 +911,32 @@ static void combo_dynamically_set_title_changed_cb (GtkWidget *w)
     const gint status = gtk_combo_box_get_active (GTK_COMBO_BOX(w));
 
     config_setint ("d_set_title", status);
+    window_title_change_all ();
+}
+
+static void check_max_title_length_cb (GtkWidget *w)
+{
+    DEBUG_FUNCTION ("check_max_title_length_cb");
+
+    GtkWidget *entry = GTK_WIDGET(
+        gtk_builder_get_object (xml, ("spin_title_max_length"))
+    );
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+        config_setbool("title_max_length_flag", TRUE);
+        gtk_editable_set_editable (GTK_EDITABLE(entry), TRUE);
+    } else {
+        config_setbool("title_max_length_flag", FALSE);
+        gtk_editable_set_editable (GTK_EDITABLE(entry), FALSE);
+    }
+}
+
+static void spin_max_title_length_changed_cb (GtkWidget *w)
+{
+    DEBUG_FUNCTION ("spin_max_title_length_changed_cb");
+
+    int length = gtk_spin_button_get_value (GTK_SPIN_BUTTON (w));
+
+    config_setint ("title_max_length", length);
     window_title_change_all ();
 }
 
@@ -1738,6 +1781,7 @@ static void button_keybinding_clicked_cb (GtkWidget *w)
     const GtkWidget *button_keybinding_gototab8 =     GTK_WIDGET (gtk_builder_get_object (xml, "button_keybinding_gototab8"));
     const GtkWidget *button_keybinding_gototab9 =     GTK_WIDGET (gtk_builder_get_object (xml, "button_keybinding_gototab9"));
     const GtkWidget *button_keybinding_gototab10 =    GTK_WIDGET (gtk_builder_get_object (xml, "button_keybinding_gototab10"));
+    const GtkWidget *button_keybinding_fullscreen =   GTK_WIDGET (gtk_builder_get_object (xml, "button_keybinding_fullscreen"));
 
     /* Make the preferences window and buttons non-sensitive while we are grabbing keys. */
     gtk_widget_set_sensitive (GTK_WIDGET(wizard_notebook), FALSE);
@@ -1762,6 +1806,7 @@ static void button_keybinding_clicked_cb (GtkWidget *w)
     gtk_widget_set_sensitive (GTK_WIDGET(button_keybinding_gototab8), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET(button_keybinding_gototab9), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET(button_keybinding_gototab10), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET(button_keybinding_fullscreen), FALSE);
 
     /* Bring up the dialog that will accept the new keybinding */
     GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW(wizard_window),
@@ -1801,6 +1846,7 @@ static void button_keybinding_clicked_cb (GtkWidget *w)
     gtk_widget_set_sensitive (GTK_WIDGET(button_keybinding_gototab8), TRUE);
     gtk_widget_set_sensitive (GTK_WIDGET(button_keybinding_gototab9), TRUE);
     gtk_widget_set_sensitive (GTK_WIDGET(button_keybinding_gototab10), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET(button_keybinding_fullscreen), TRUE);
 
     /* If the dialog was "programmatically destroyed" (we got a key), we don't want to destroy it again.
        Otherwise, we do want to destroy it, otherwise it would stick around even after hitting Cancel. */
@@ -1905,6 +1951,12 @@ static void set_wizard_state_from_config () {
     /* Title and Command Tab */
     TEXT_ENTRY ("entry_title", "title");
     COMBO_BOX ("combo_dynamically_set_title", "d_set_title");
+    // Whether to limit the length of the title
+    CHECK_BUTTON ("check_title_max_length", "title_max_length_flag");
+    // The maximum length of the title
+    SPIN_BUTTON_SET_RANGE ("spin_title_max_length", 0, 99999);
+    SPIN_BUTTON_SET_VALUE ("spin_title_max_length", config_getint ("title_max_length"));
+    SET_SENSITIVE_BY_CONFIG_BOOL ("spin_title_max_length", "title_max_length_flag");
 
     CHECK_BUTTON ("check_run_custom_command", "run_command");
     TEXT_ENTRY ("entry_custom_command", "command");
@@ -1998,6 +2050,7 @@ static void set_wizard_state_from_config () {
     BUTTON_LABEL_FROM_CFG ("button_keybinding_gototab8", "gototab_8_key");
     BUTTON_LABEL_FROM_CFG ("button_keybinding_gototab9", "gototab_9_key");
     BUTTON_LABEL_FROM_CFG ("button_keybinding_gototab10", "gototab_10_key");
+    BUTTON_LABEL_FROM_CFG ("button_keybinding_fullscreen", "fullscreen_key");
 }
 
 #define CONNECT_SIGNAL(GLADE_WIDGET,SIGNAL_NAME,SIGNAL_HANDLER) g_signal_connect ( \
@@ -2034,6 +2087,8 @@ static void connect_wizard_signals ()
     /* Title and Command Tab */
     CONNECT_SIGNAL ("entry_title","changed",entry_title_changed_cb);
     CONNECT_SIGNAL ("combo_dynamically_set_title","changed",combo_dynamically_set_title_changed_cb);
+    CONNECT_SIGNAL ("check_title_max_length","toggled",check_max_title_length_cb);
+    CONNECT_SIGNAL ("spin_title_max_length","value-changed", spin_max_title_length_changed_cb);
 
     CONNECT_SIGNAL ("check_run_custom_command","toggled",check_run_custom_command_toggled_cb);
     CONNECT_SIGNAL ("combo_command_exit","changed",combo_command_exit_changed_cb);
@@ -2107,6 +2162,7 @@ static void connect_wizard_signals ()
     CONNECT_SIGNAL ("button_keybinding_gototab8","clicked",button_keybinding_clicked_cb);
     CONNECT_SIGNAL ("button_keybinding_gototab9","clicked",button_keybinding_clicked_cb);
     CONNECT_SIGNAL ("button_keybinding_gototab10","clicked",button_keybinding_clicked_cb);
+    CONNECT_SIGNAL ("button_keybinding_fullscreen", "clicked", button_keybinding_clicked_cb);
 
     /* Close Button */
     CONNECT_SIGNAL ("button_wizard_close","clicked",button_wizard_close_clicked_cb);
