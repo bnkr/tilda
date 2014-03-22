@@ -351,19 +351,28 @@ static gboolean parse_cli (int argc, char *argv[])
     }
 
     /* Now set the options in the config, if they changed */
-    if (background_color != config_getstr ("background_color"))
+    if (background_color != config_getstr ("background_color")) {
         config_setstr ("background_color", background_color);
+        g_free(background_color);
+    }
     if (command != config_getstr ("command"))
     {
         config_setbool ("run_command", TRUE);
         config_setstr ("command", command);
+        g_free(command);
     }
-    if (font != config_getstr ("font"))
+    if (font != config_getstr ("font")) {
         config_setstr ("font", font);
-    if (image != config_getstr ("image"))
+        g_free(font);
+    }
+    if (image != config_getstr ("image")) {
         config_setstr ("image", image);
-    if (working_dir != config_getstr ("working_dir"))
+        g_free(image);
+    }
+    if (working_dir != config_getstr ("working_dir")) {
         config_setstr ("working_dir", working_dir);
+        g_free(working_dir);
+    }
 
     if (lines != config_getint ("lines"))
         config_setint ("lines", lines);
@@ -418,6 +427,10 @@ static gchar *get_config_file_name (gint instance)
     return config_file;
 }
 
+static gint _cmp_locks(gint a, gint b) {
+  return a - b;
+}
+
 /**
  * get_instance_number ()
  *
@@ -434,8 +447,12 @@ static gint get_instance_number ()
     gint i;
     gchar *name;
 
+    GSequence *seq;
+    GSequenceIter *iter;
+    gint lowest_lock_instance = 0;
+    gint current_lock_instance;
+
     GDir *dir;
-    GSList *list = NULL;
     struct lock_info *lock;
     gchar *lock_dir = g_build_filename (g_get_user_cache_dir (), "tilda", "locks", NULL);
 
@@ -451,32 +468,34 @@ static gint get_instance_number ()
     }
 
     /* Look through every file in the lock directory, and see if it is a lock file.
-     * If it is a lock file, store it's instance number in the list. */
+     * If it is a lock file, insert it in a sorted sequence. */
+    seq = g_sequence_new(NULL);
     while ((name = (gchar*)g_dir_read_name (dir)) != NULL)
     {
         lock = islockfile (name);
 
         if (lock != NULL)
         {
-            list = g_slist_append (list, GINT_TO_POINTER (lock->instance));
+            g_sequence_insert_sorted(seq, GINT_TO_POINTER(lock->instance), (GCompareDataFunc)_cmp_locks, NULL);
             g_free (lock);
         }
     }
 
     g_dir_close (dir);
-
-    /* Find the lowest available instance.
-     *
-     * This is not the most efficient algorithm ever, but the
-     * list should not be too big, so it's ok for now. */
-    for (i=0; i<INT_MAX; i++)
-        if (!g_slist_find (list, GINT_TO_POINTER (i)))
-            break;
-
     g_free (lock_dir);
-    g_slist_free (list);
 
-    return i;
+    /* We iterate the sorted sequence of lock instances to find the first (lowest) number *not* taken. */
+    for (iter = g_sequence_get_begin_iter(seq); !g_sequence_iter_is_end(iter); iter = g_sequence_iter_next(iter)) {
+      current_lock_instance = GPOINTER_TO_INT(g_sequence_get(iter));
+      if (lowest_lock_instance < current_lock_instance)
+        break;
+      else
+        lowest_lock_instance = current_lock_instance + 1;
+    }
+
+    g_sequence_free(seq);
+
+    return lowest_lock_instance;
 }
 
 static void termination_handler (G_GNUC_UNUSED gint signum) {

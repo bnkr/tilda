@@ -11,13 +11,6 @@ AM_INIT_AUTOMAKE
 #     https://live.gnome.org/GnomeGoals/NicerBuilds
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
-AC_CONFIG_SRCDIR([src/tilda.c])
-AC_CONFIG_HEADERS([tilda-config.h:tilda-config.h.in])
-
-# This will initialize the internationalization
-# capabilities of glib (glib/gi18n.h) and gettext
-AM_GNU_GETTEXT_VERSION([0.18.1])
-AM_GNU_GETTEXT([external])
 
 # See http://www.gnu.org/savannah-checkouts/gnu/automake/manual/html_node/maintainer_002dmode.html
 # for an explanation of using this macro. The short explanation is:
@@ -75,9 +68,6 @@ if test "x$enable_debug" = "xyes"; then
 	CFLAGS="$CFLAGS -g -ggdb"
 fi
 
-#Use C99 compilation mode
-CFLAGS="$CFLAGS -std=c99"
-
 # This registers the option '--debug-functions' in the ./configure script
 # If this option is set, then the name of each entered function will be
 # printed on the shell.
@@ -91,10 +81,30 @@ if test "x$enable_debug_functions" = "xyes"; then
 	AC_DEFINE([DEBUG_FUNCTIONS], [1], [Enable function call tracing])
 fi
 
+AC_ARG_ENABLE([clang],
+    [AS_HELP_STRING([--enable-clang],[use clang instead of gcc as C compiler.])])
+
+#Use C99 compilation mode
+if test "x$enable_clang" = "xyes"; then
+    # clang uses c99 mode by default, so we just set CC to clang and we are done
+    CC="clang";
+else
+    # We do not need to set CC as the default is gcc, but we need to set it to
+    # use C99 compilation mode
+    CFLAGS="$CFLAGS -std=c99";
+fi
+
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
 
+AC_CONFIG_SRCDIR([src/tilda.c])
+AC_CONFIG_HEADERS([tilda-config.h:tilda-config.h.in])
+
+# This will initialize the internationalization
+# capabilities of glib (glib/gi18n.h) and gettext
+AM_GNU_GETTEXT_VERSION([0.18.1])
+AM_GNU_GETTEXT([external])
 # Checks for libraries.
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([GTK], [gtk+-3.0 >= 3.0.0])
@@ -126,6 +136,21 @@ dnl ---------------------------------------------------------------------------
 dnl - Show summary
 dnl ---------------------------------------------------------------------------
 
+dnl The following for block, splits the CFLAGS variable into multiple lines of 4 options per line
+cflaglines=""
+cflagcount=0
+for flag in ${CFLAGS}; do
+    cflaglines=$cflaglines$flag" "
+    cflagcount=$(($cflagcount+1))
+    if (( $cflagcount % 4 == 0)); then
+       dnl Here we concatenate the current cflaglines variable with a newline and enough spaces
+       dnl such that the lines are correctly indented. Do not try to indent or reformat the
+       dnl position of the double quotes (").
+       cflaglines=$cflaglines"
+                                       "
+    fi
+done;
+
 echo "
               ${PACKAGE} $VERSION
               `echo ${PACKAGE} $VERSION | sed "s/./=/g"`
@@ -133,10 +158,10 @@ echo "
         prefix:                        ${prefix}
         datarootdir:                   ${datarootdir}
         datadir:                       ${datadir}
-        pkgdatadir:                    `if -z ${pkgdatadir}; then echo ${pkgdatadir}; else echo ${datadir}/${PACKAGE}; fi`
+        pkgdatadir:                    `if test x${pkgdatadir} != "x"; then echo ${pkgdatadir}; else echo ${datadir}/${PACKAGE}; fi`
         source code location:          ${srcdir}
         compiler:                      ${CC}
-        cflags:                        ${CFLAGS}
+        cflags:                        ${cflaglines}
         Maintainer mode:               ${USE_MAINTAINER_MODE}
         Use *_DISABLE_DEPRECATED:      ${enable_deprecation_flags}
 "

@@ -177,22 +177,13 @@ void tilda_term_set_scrollbar_position (tilda_term *tt, enum tilda_term_scrollba
     DEBUG_ASSERT (tt != NULL);
     DEBUG_ASSERT (pos == LEFT || pos == RIGHT || pos == DISABLED);
 
-    switch (pos)
-    {
-        case LEFT:
-            gtk_box_reorder_child (GTK_BOX(tt->hbox), tt->scrollbar, 0);
-            gtk_widget_show (tt->scrollbar);
-            break;
-
-        case RIGHT:
-            gtk_box_reorder_child (GTK_BOX(tt->hbox), tt->scrollbar, 1);
-            gtk_widget_show (tt->scrollbar);
-            break;
-
-        case DISABLED:
-        default:
-            gtk_widget_hide (tt->scrollbar);
-            break;
+    if (pos == DISABLED) {
+        gtk_widget_hide (tt->scrollbar);
+    } else {
+        /* We have already asserted that it's either disabled (already taken care of),
+         * left, or right, so no need to check twice. */
+        gtk_box_reorder_child (GTK_BOX(tt->hbox), tt->scrollbar, (pos == LEFT) ? 0 : 1);
+        gtk_widget_show (tt->scrollbar);
     }
 }
 
@@ -553,18 +544,18 @@ static gint tilda_term_config_defaults (tilda_term *tt)
     bg.red   =    GUINT16_TO_FLOAT(config_getint ("back_red"));
     bg.green =    GUINT16_TO_FLOAT(config_getint ("back_green"));
     bg.blue  =    GUINT16_TO_FLOAT(config_getint ("back_blue"));
-    bg.alpha =    1.0d;
+    bg.alpha =    1.0;
 
     fg.red   =    GUINT16_TO_FLOAT(config_getint ("text_red"));
     fg.green =    GUINT16_TO_FLOAT(config_getint ("text_green"));
     fg.blue  =    GUINT16_TO_FLOAT(config_getint ("text_blue"));
-    fg.alpha =    1.0d;
+    fg.alpha =    1.0;
 
     for(i = 0;i < TERMINAL_PALETTE_SIZE; i++) {
         current_palette[i].red   = GUINT16_TO_FLOAT(config_getnint ("palette", i*3));
         current_palette[i].green = GUINT16_TO_FLOAT(config_getnint ("palette", i*3+1));
         current_palette[i].blue  = GUINT16_TO_FLOAT(config_getnint ("palette", i*3+2));
-        current_palette[i].alpha = 1.0d;
+        current_palette[i].alpha = 1.0;
     }
 
     vte_terminal_set_colors_rgba (VTE_TERMINAL(tt->vte_term), &fg, &bg, current_palette, TERMINAL_PALETTE_SIZE);
@@ -835,7 +826,7 @@ static int button_press_cb (G_GNUC_UNUSED GtkWidget *widget, GdkEventButton *eve
     tilda_term *tt;
     gchar *match;
     gint tag;
-    gint xpad, ypad;
+    gint ypad;
     gchar *cmd;
     gchar *web_browser_cmd;
     gboolean ret = FALSE;
@@ -854,10 +845,10 @@ static int button_press_cb (G_GNUC_UNUSED GtkWidget *widget, GdkEventButton *eve
             GtkBorder border;
             gtk_widget_style_get (GTK_WIDGET (terminal),
                 "inner-border", &border, NULL);
-            xpad = border.left;
+
             ypad = border.bottom;
             match = vte_terminal_match_check (terminal,
-                    (event->x - xpad) /
+                    (event->x - ypad) /
                     vte_terminal_get_char_width (terminal),
                     (event->y - ypad) /
                     vte_terminal_get_char_height (terminal),
