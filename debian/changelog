@@ -1,3 +1,10 @@
+tilda (1.1.8+bnkr5-1) experimental; urgency=low
+
+  * Fix focus stealing issues (Andy Perkins, Enrico Joerns)
+  * Clean ups and refactors (Christian Schramm)
+
+ -- James Webber <bunkerprivate@gmail.com>  Sat, 22 Mar 2014 13:29:23 +0000
+
 tilda (1.1.8+bnkr4-1) experimental; urgency=low
 
   * Characeter limit for tab titles.
