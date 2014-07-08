@@ -94,23 +94,14 @@ void tilda_window_close_current_tab (tilda_window *tw)
 
 gint tilda_window_set_tab_position (tilda_window *tw, enum notebook_tab_positions pos)
 {
-    switch (pos)
-    {
-        default: /* default is top */
-            g_printerr (_("You have a bad tab_pos in your configuration file\n"));
-        case NB_TOP:
-            gtk_notebook_set_tab_pos (GTK_NOTEBOOK (tw->notebook), GTK_POS_TOP);
-            break;
-        case NB_BOTTOM:
-            gtk_notebook_set_tab_pos (GTK_NOTEBOOK (tw->notebook), GTK_POS_BOTTOM);
-            break;
-        case NB_LEFT:
-            gtk_notebook_set_tab_pos (GTK_NOTEBOOK (tw->notebook), GTK_POS_LEFT);
-            break;
-        case NB_RIGHT:
-            gtk_notebook_set_tab_pos (GTK_NOTEBOOK (tw->notebook), GTK_POS_RIGHT);
-            break;
+    const gint gtk_pos[] = { GTK_POS_TOP, GTK_POS_BOTTOM, GTK_POS_LEFT, GTK_POS_RIGHT };
+
+    if ((pos < 0) || (pos > 3)) {
+        g_printerr (_("You have a bad tab_pos in your configuration file\n"));
+        pos = NB_TOP;
     }
+
+    gtk_notebook_set_tab_pos (GTK_NOTEBOOK (tw->notebook), gtk_pos[pos]);
 
     return 0;
 }
@@ -122,7 +113,6 @@ gint toggle_fullscreen_cb (tilda_window *tw)
     DEBUG_ASSERT (tw != NULL);
 
     if (tw->fullscreen != TRUE) {
-        tw->fullscreen = TRUE;
         gtk_window_fullscreen (GTK_WINDOW (tw->window));
     }
     else {
@@ -131,16 +121,15 @@ gint toggle_fullscreen_cb (tilda_window *tw)
         // while fullscreened.
         gtk_window_set_default_size (GTK_WINDOW(tw->window), config_getint ("max_width"), config_getint ("max_height"));
         gtk_window_resize (GTK_WINDOW(tw->window), config_getint ("max_width"), config_getint ("max_height"));
-        tw->fullscreen = FALSE;
     }
+    tw->fullscreen = !tw->fullscreen;
 
     // It worked. Having this return GDK_EVENT_STOP makes the callback not carry the
     // keystroke into the vte terminal widget.
     return GDK_EVENT_STOP;
 }
 
-
-static gint next_tab (tilda_window *tw)
+gint tilda_window_next_tab (tilda_window *tw)
 {
     DEBUG_FUNCTION ("next_tab");
     DEBUG_ASSERT (tw != NULL);
@@ -162,7 +151,7 @@ static gint next_tab (tilda_window *tw)
     return GDK_EVENT_STOP;
 }
 
-static gint prev_tab (tilda_window *tw)
+gint tilda_window_prev_tab (tilda_window *tw)
 {
     DEBUG_FUNCTION ("prev_tab");
     DEBUG_ASSERT (tw != NULL);
@@ -183,9 +172,11 @@ static gint prev_tab (tilda_window *tw)
     return GDK_EVENT_STOP;
 }
 
-static gint move_tab_left (tilda_window *tw)
+enum tab_direction { TAB_LEFT = 1, TAB_RIGHT = -1 };
+
+static gint move_tab (tilda_window *tw, int direction)
 {
-    DEBUG_FUNCTION ("move_tab_left");
+    DEBUG_FUNCTION ("move_tab");
     DEBUG_ASSERT (tw != NULL);
 
     int num_pages;
@@ -194,52 +185,34 @@ static gint move_tab_left (tilda_window *tw)
     GtkWidget* current_page;
 
     num_pages = gtk_notebook_get_n_pages (GTK_NOTEBOOK (tw->notebook));
-    current_page_index = gtk_notebook_get_current_page (GTK_NOTEBOOK (tw->notebook));
-    current_page = gtk_notebook_get_nth_page (GTK_NOTEBOOK (tw->notebook),
-                                              current_page_index);
 
     if (num_pages > 1) {
-      if (current_page_index < num_pages - 1) {
-        // Move current page one to the left
-        new_page_index = current_page_index + 1;
-      } else {
-        // Current page is at beginning: move to end
-        new_page_index = 0;
-      }
+        current_page_index = gtk_notebook_get_current_page (GTK_NOTEBOOK (tw->notebook));
+        current_page = gtk_notebook_get_nth_page (GTK_NOTEBOOK (tw->notebook),
+                                                  current_page_index);
 
-      gtk_notebook_reorder_child (GTK_NOTEBOOK (tw->notebook), current_page,
-                                  new_page_index);
+        /* wrap over if new_page_index over-/underflows */
+        new_page_index = (current_page_index + direction) % num_pages;
+
+        gtk_notebook_reorder_child (GTK_NOTEBOOK (tw->notebook), current_page,
+                                    new_page_index);
     }
 
     // It worked. Having this return GDK_EVENT_STOP makes the callback not carry the
     // keystroke into the vte terminal widget.
     return GDK_EVENT_STOP;
+
+}
+static gint move_tab_left (tilda_window *tw)
+{
+    DEBUG_FUNCTION ("move_tab_left");
+    return move_tab(tw, LEFT);
 }
 
 static gint move_tab_right (tilda_window *tw)
 {
     DEBUG_FUNCTION ("move_tab_right");
-    DEBUG_ASSERT (tw != NULL);
-
-    int num_pages;
-    int current_page_index;
-    GtkWidget* current_page;
-
-    num_pages = gtk_notebook_get_n_pages (GTK_NOTEBOOK (tw->notebook));
-    current_page_index = gtk_notebook_get_current_page (GTK_NOTEBOOK (tw->notebook));
-    current_page = gtk_notebook_get_nth_page (GTK_NOTEBOOK (tw->notebook),
-                                              current_page_index);
-
-    if (num_pages > 1) {
-      // Move current page one to the right. This automatically wraps
-      // when current_page_index - 1 is negative.
-      gtk_notebook_reorder_child (GTK_NOTEBOOK (tw->notebook), current_page,
-                                  current_page_index - 1);
-    }
-
-    // It worked. Having this return GDK_EVENT_STOP makes the callback not carry the
-    // keystroke into the vte terminal widget.
-    return GDK_EVENT_STOP;
+    return move_tab(tw, RIGHT);
 }
 
 static gboolean focus_term (GtkWidget *widget, gpointer data)
@@ -325,11 +298,8 @@ static gboolean mouse_enter (GtkWidget *widget, G_GNUC_UNUSED GdkEvent *event, g
     DEBUG_ASSERT (data != NULL);
     DEBUG_ASSERT (widget != NULL);
 
-    GdkEventCrossing *ev = (GdkEventCrossing*)event;
     tilda_window *tw = TILDA_WINDOW(data);
     stop_auto_hide_tick(tw);
-    if (tw->disable_auto_hide == TRUE && ev->time != 0)
-        tilda_window_set_active(tw);
 
     return GDK_EVENT_STOP;
 }
@@ -383,10 +353,9 @@ static gboolean goto_tab_generic (tilda_window *tw, guint tab_number)
     if (g_list_length (tw->terms) > (tab_number-1))
     {
         goto_tab (tw, tab_number - 1);
-        return TRUE;
     }
 
-    return FALSE;
+    return TRUE;
 }
 
 /* These all just call the generic function since they're all basically the same
@@ -472,8 +441,8 @@ gint tilda_window_setup_keyboard_accelerators (tilda_window *tw)
        Move Tab, Add Tab, Close Tab, Copy, and Paste using key
        combinations defined in the config. */
     tilda_add_config_accelerator("quit_key",         G_CALLBACK(gtk_main_quit),                  tw);
-    tilda_add_config_accelerator("nexttab_key",      G_CALLBACK(next_tab),                       tw);
-    tilda_add_config_accelerator("prevtab_key",      G_CALLBACK(prev_tab),                       tw);
+    tilda_add_config_accelerator("nexttab_key",      G_CALLBACK(tilda_window_next_tab),          tw);
+    tilda_add_config_accelerator("prevtab_key",      G_CALLBACK(tilda_window_prev_tab),          tw);
     tilda_add_config_accelerator("movetableft_key",  G_CALLBACK(move_tab_left),                  tw);
     tilda_add_config_accelerator("movetabright_key", G_CALLBACK(move_tab_right),                 tw);
     tilda_add_config_accelerator("addtab_key",       G_CALLBACK(tilda_window_add_tab),           tw);
@@ -524,19 +493,13 @@ static gboolean delete_event_callback (G_GNUC_UNUSED GtkWidget *widget,
     return FALSE;
 }
 
-tilda_window *tilda_window_init (const gchar *config_file, const gint instance)
+gboolean tilda_window_init (const gchar *config_file, const gint instance, tilda_window *tw)
 {
     DEBUG_FUNCTION ("tilda_window_init");
     DEBUG_ASSERT (instance >= 0);
 
-    tilda_window *tw;
     GtkCssProvider *provider;
     GtkStyleContext *style_context;
-
-    tw = g_malloc (sizeof(tilda_window));
-
-    if (tw == NULL)
-        return NULL;
 
     /* Set the instance number */
     tw->instance = instance;
@@ -620,8 +583,7 @@ tilda_window *tilda_window_init (const gchar *config_file, const gint instance)
     /* Add the initial terminal */
     if (!tilda_window_add_tab (tw))
     {
-        free (tw);
-        return NULL;
+        return FALSE;
     }
 
     /* This is required in key_grabber.c to get the x11 server time,
@@ -654,7 +616,7 @@ tilda_window *tilda_window_init (const gchar *config_file, const gint instance)
     gtk_widget_realize (tw->window);
     generate_animation_positions (tw);
 
-    return tw;
+    return TRUE;
 }
 
 gint tilda_window_free (tilda_window *tw)
@@ -673,7 +635,6 @@ gint tilda_window_free (tilda_window *tw)
     }
 
     g_free (tw->config_file);
-    g_free (tw);
 
     return 0;
 }
@@ -701,7 +662,7 @@ gint tilda_window_add_tab (tilda_window *tw)
     /* Strangely enough, prepend puts pages on the end */
     index = gtk_notebook_append_page (GTK_NOTEBOOK(tw->notebook), tt->hbox, label);
     gtk_notebook_set_current_page (GTK_NOTEBOOK(tw->notebook), index);
-	gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(tw->notebook), tt->hbox, TRUE);
+    gtk_notebook_set_tab_reorderable (GTK_NOTEBOOK(tw->notebook), tt->hbox, TRUE);
 
     /* We should show the tabs if there are more than one tab in the notebook */
     if (gtk_notebook_get_n_pages (GTK_NOTEBOOK (tw->notebook)) > 1)

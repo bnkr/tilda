@@ -39,7 +39,7 @@ struct tilda_window_
     gboolean config_writing_disabled;
     gint instance;
     gboolean have_argb_visual;
-    
+
     /* Temporarily disable auto hiding */
     gboolean disable_auto_hide;
     /* Auto hide tick-function handler */
@@ -84,20 +84,41 @@ gint tilda_window_add_tab (tilda_window *tw);
 gint tilda_window_close_tab (tilda_window *tw, gint tab_position, gboolean force_exit);
 
 /**
+ * tilda_window_next_tab ()
+ *
+ * Switch to next tab
+ *
+ * Success: return 0
+ * Failure: return non-zero
+ */
+gint tilda_window_next_tab (tilda_window *tw);
+
+/**
+ * tilda_window_prev_tab ()
+ *
+ * Switch to previous tab
+ *
+ * Success: return 0
+ * Failure: return non-zero
+ */
+gint tilda_window_prev_tab (tilda_window *tw);
+
+/**
  * tilda_window_init ()
  *
- * Create a new tilda_window * and return it. It will also initialize and set up
+ * Initalizes an already allocated tilda_window *. It will also initialize and set up
  * as much of the window as possible using the values in the configuation system.
  *
  * @param instance the instance number of this tilda_window
  *
- * Success: return a non-NULL tilda_window *
- * Failure: return NULL
- *
  * Notes: The configuration system must be up and running before calling this function.
  */
-tilda_window *tilda_window_init (const gchar *config_file, const gint instance);
+gboolean tilda_window_init (const gchar *config_file, const gint instance, tilda_window *tw);
 
+/**
+ * Releases resources that are being used by the tilda window, such as the tabs
+ * or the config file.
+ */
 gint tilda_window_free (tilda_window *tw);
 
 /**
