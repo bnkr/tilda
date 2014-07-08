@@ -1,3 +1,16 @@
+tilda (1.1.8+bnkr6-1) experimental; urgency=low
+
+  * Update Lithuanian translation (gymka)
+  * Further refactors and fixes from them (Christian Schramm, Sebastian Geiger)
+  * Switch tab with mouse forward and back buttons (Olivier Pilotte)
+  * Menu key activates context menu (Sebastian Geiger)
+  * Don't steal focus on mouseover (James Webber)
+  * Don't make tilda active when subwindows are open (James Webber)
+  * Always swallow switch-to-tab key even if the tab isn't open (James Webber)
+  * Use link time optimisation (Christian Schramm)
+
+ -- James Webber <bunkerprivate@gmail.com>  Tue, 08 Jul 2014 11:52:40 +0100
+
 tilda (1.1.8+bnkr5-1) experimental; urgency=low
 
   * Fix focus stealing issues (Andy Perkins, Enrico Joerns)
