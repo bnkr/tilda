@@ -10,14 +10,13 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef TILDA_H
 #define TILDA_H
 
-#include <tilda_window.h>
+#include "tilda_window.h"
 
 #include <gtk/gtk.h>
 
@@ -32,6 +31,7 @@ struct lock_info
 {
     gint pid;
     gint instance;
+    gint file_descriptor;
 };
 
 #define GUINT16_TO_FLOAT(color) (color / (double) 0xFFFF)

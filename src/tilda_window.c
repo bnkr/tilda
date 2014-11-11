@@ -10,19 +10,18 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <tilda-config.h>
 
-#include <debug.h>
-#include <tilda.h>
-#include <callback_func.h>
-#include <configsys.h>
-#include <tilda_window.h>
-#include <tilda_terminal.h>
-#include <key_grabber.h>
+#include "debug.h"
+#include "tilda.h"
+#include "callback_func.h"
+#include "configsys.h"
+#include "tilda_window.h"
+#include "tilda_terminal.h"
+#include "key_grabber.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +32,8 @@
 #include <glib.h>
 #include <glib/gi18n.h>
 #include <vte/vte.h>
+#include <X11/Xlib.h>
+#include <gdk/gdkx.h>
 
 static void
 tilda_window_setup_alpha_mode (tilda_window *tw)
@@ -94,14 +95,21 @@ void tilda_window_close_current_tab (tilda_window *tw)
 
 gint tilda_window_set_tab_position (tilda_window *tw, enum notebook_tab_positions pos)
 {
-    const gint gtk_pos[] = { GTK_POS_TOP, GTK_POS_BOTTOM, GTK_POS_LEFT, GTK_POS_RIGHT };
+    const GtkPositionType gtk_pos[] = {GTK_POS_TOP, GTK_POS_BOTTOM, GTK_POS_LEFT, GTK_POS_RIGHT };
 
-    if ((pos < 0) || (pos > 3)) {
+    if ((pos < 0) || (pos > 4)) {
         g_printerr (_("You have a bad tab_pos in your configuration file\n"));
         pos = NB_TOP;
     }
 
-    gtk_notebook_set_tab_pos (GTK_NOTEBOOK (tw->notebook), gtk_pos[pos]);
+    if(NB_HIDDEN == pos) {
+        gtk_notebook_set_show_tabs (GTK_NOTEBOOK(tw->notebook), FALSE);
+    }
+    else {
+        gtk_notebook_set_tab_pos (GTK_NOTEBOOK (tw->notebook), gtk_pos[pos]);
+        if (gtk_notebook_get_n_pages (GTK_NOTEBOOK (tw->notebook)) > 1)
+            gtk_notebook_set_show_tabs (GTK_NOTEBOOK(tw->notebook), TRUE);
+    }
 
     return 0;
 }
@@ -121,6 +129,7 @@ gint toggle_fullscreen_cb (tilda_window *tw)
         // while fullscreened.
         gtk_window_set_default_size (GTK_WINDOW(tw->window), config_getint ("max_width"), config_getint ("max_height"));
         gtk_window_resize (GTK_WINDOW(tw->window), config_getint ("max_width"), config_getint ("max_height"));
+        gtk_window_move(GTK_WINDOW(tw->window), config_getint ("x_pos"), config_getint ("y_pos"));
     }
     tw->fullscreen = !tw->fullscreen;
 
@@ -246,7 +255,7 @@ static gboolean auto_hide_tick(gpointer data)
     tw->auto_hide_current_time += tw->timer_resolution;
     if ((tw->auto_hide_current_time >= tw->auto_hide_max_time) || tw->current_state == UP)
     {
-        pull(tw, PULL_UP);
+        pull(tw, PULL_UP, TRUE);
         tw->auto_hide_tick_handler = 0;
         return FALSE;
     }
@@ -257,6 +266,7 @@ static gboolean auto_hide_tick(gpointer data)
 /* Start auto hide tick */
 static void start_auto_hide_tick(tilda_window *tw)
 {
+    DEBUG_FUNCTION("start_auto_hide_tick");
     // If the delay is less or equal to 1000ms then the timer is not precise
     // enough, because it takes already about 200ms to register it, so we
     // rather sleep for the given amount of time.
@@ -271,13 +281,13 @@ static void start_auto_hide_tick(tilda_window *tw)
         if (tw->auto_hide_max_time > MAX_SLEEP_TIME) {
             tw->auto_hide_current_time = 0;
             tw->auto_hide_tick_handler = g_timeout_add(tw->timer_resolution, auto_hide_tick, tw);
-        } else if (tw->auto_hide_max_time <= MAX_SLEEP_TIME) {
+        } else if (tw->auto_hide_max_time > 0 && tw->auto_hide_max_time <= MAX_SLEEP_TIME) {
             // auto_hide_max_time is in milli seconds, so we need to convert to
             // microseconds by multiplying with 1000
             g_usleep (tw->auto_hide_max_time * 1000);
-            pull(tw, PULL_UP);
+            pull(tw, PULL_UP, TRUE);
         } else {
-            pull(tw, PULL_UP);
+            pull(tw, PULL_UP, TRUE);
         }
     }
 }
@@ -328,6 +338,27 @@ static gboolean focus_out_event_cb (GtkWidget *widget, G_GNUC_UNUSED GdkEvent *e
     DEBUG_ASSERT (widget != NULL);
 
     tilda_window *tw = TILDA_WINDOW(data);
+
+    /**
+    * When the tilda 'key' to pull down/up the tilda window is pressed, then tilda will inevitably loose focus. The
+    * problem is that we cannot distinguish whether it was focused before the key press occurred. Checking the xevent
+    * type here allows us to distinguish these two cases:
+    *
+    *  * We loose focus because of a KeyPress event
+    *  * We loose focus because another window gained focus or some other reason.
+    *
+    *  Depending on one of the two cases we set the tw->focus_loss_on_keypress to true or false. We can then
+    *  check this flag in the pull() function that shows or hides the tilda window. This helps us to decide if
+    *  we just need to focus tilda or if we should hide it.
+    */
+    XEvent xevent;
+    XPeekEvent(gdk_x11_display_get_xdisplay(gdk_window_get_display(gtk_widget_get_window(tw->window))), &xevent);
+
+    if(xevent.type == KeyPress) {
+        tw->focus_loss_on_keypress = TRUE;
+    } else {
+        tw->focus_loss_on_keypress = FALSE;
+    }
 
     if (tw->auto_hide_on_focus_lost == FALSE)
         return GDK_EVENT_PROPAGATE;
@@ -519,6 +550,14 @@ gboolean tilda_window_init (const gchar *config_file, const gint instance, tilda
     tw->auto_hide_on_mouse_leave = config_getbool("auto_hide_on_mouse_leave");
     tw->auto_hide_on_focus_lost = config_getbool("auto_hide_on_focus_lost");
     tw->disable_auto_hide = FALSE;
+    tw->focus_loss_on_keypress = FALSE;
+
+    if(1 == config_getint("non_focus_pull_up_behaviour")) {
+        tw->hide_non_focused = TRUE;
+    }
+    else {
+        tw->hide_non_focused = FALSE;
+    }
 
     tw->fullscreen = FALSE;
 
@@ -664,8 +703,10 @@ gint tilda_window_add_tab (tilda_window *tw)
     gtk_notebook_set_current_page (GTK_NOTEBOOK(tw->notebook), index);
     gtk_notebook_set_tab_reorderable (GTK_NOTEBOOK(tw->notebook), tt->hbox, TRUE);
 
-    /* We should show the tabs if there are more than one tab in the notebook */
-    if (gtk_notebook_get_n_pages (GTK_NOTEBOOK (tw->notebook)) > 1)
+    /* We should show the tabs if there are more than one tab in the notebook,
+     * and tab position is not set to hidden */
+    if (gtk_notebook_get_n_pages (GTK_NOTEBOOK (tw->notebook)) > 1 &&
+            config_getint("tab_pos") != NB_HIDDEN)
         gtk_notebook_set_show_tabs (GTK_NOTEBOOK (tw->notebook), TRUE);
 
     /* Add to GList list of tilda_term structures in tilda_window structure */
@@ -730,7 +771,7 @@ gint tilda_window_close_tab (tilda_window *tw, gint tab_index, gboolean force_ex
                     break;
                 case RESTART_TERMINAL_AND_HIDE:
                     tilda_window_add_tab (tw);
-                    pull (tw, PULL_UP);
+                    pull (tw, PULL_UP, TRUE);
                     break;
                 case EXIT_TILDA:
                 default:

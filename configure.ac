@@ -3,8 +3,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([Tilda],[1.2-alpha],[https://github.com/lanoxx/tilda/issues],[tilda],[https://github.com/lanoxx/tilda])
-AM_INIT_AUTOMAKE([subdir-objects])
+AC_INIT([Tilda],[1.2.2],[https://github.com/lanoxx/tilda/issues],[tilda],[https://github.com/lanoxx/tilda])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 # We are going to use silent builds which have a much
 # nicer output. More information can be foudn here:
@@ -111,6 +111,12 @@ if test "x$enable_lto" = "xyes"; then
     LDFLAGS="$LDFLAGS $CFLAGS -fuse-linker-plugin"
 fi
 
+
+AC_PATH_PROG(GLIB_COMPILE_RESOURCES, glib-compile-resources, no)
+if test x$GLIB_COMPILE_RESOURCES = xno; then
+  AC_MSG_ERROR(Could not find a glib-compile-resources in your PATH)
+fi
+
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -127,11 +133,11 @@ PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([GTK], [gtk+-3.0 >= 3.0.0])
 PKG_CHECK_MODULES([VTE], [vte-2.90])
 PKG_CHECK_MODULES([LIBCONFUSE], [libconfuse])
+PKG_CHECK_MODULES([X11], [x11])
 
 # Checks for header files.
-AC_PATH_X
 AC_HEADER_STDC
-AC_CHECK_HEADERS([fcntl.h malloc.h stdlib.h string.h strings.h sys/ioctl.h unistd.h confuse.h])
+AC_CHECK_HEADERS([fcntl.h malloc.h stdlib.h string.h strings.h sys/ioctl.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

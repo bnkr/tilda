@@ -1,10 +1,24 @@
 /* vim: set ts=4 sts=4 sw=4 expandtab textwidth=112: */
+/*
+ * This is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Library General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU Library General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #define _POSIX_SOURCE /* feature test macro for fileno */
 #define _XOPEN_SOURCE /* feature test macro for fsync */
 
 #include <tilda-config.h>
-#include <debug.h>
+#include "debug.h"
 
 #include <confuse.h>
 #include <glib.h>
@@ -13,7 +27,7 @@
 #include <stdlib.h> /* atoi */
 #include <unistd.h> /* fsync */
 
-#include <configsys.h>
+#include "configsys.h"
 
 static cfg_t *tc;
 
@@ -76,6 +90,8 @@ static cfg_opt_t config_opts[] = {
     CFG_INT("auto_hide_time", 2000, CFGF_NONE),
     CFG_INT("on_last_terminal_exit", 0, CFGF_NONE),
     CFG_INT("palette_scheme", 0, CFGF_NONE),
+    CFG_INT("non_focus_pull_up_behaviour", 0, CFGF_NONE),
+
     /* The default monitor number is 0 */
     CFG_INT("show_on_monitor_number", 0, CFGF_NONE),
     /* The length of a tab title */
@@ -111,6 +127,7 @@ static cfg_opt_t config_opts[] = {
     CFG_INT("text_blue", 0xffff, CFGF_NONE),
 
     /* booleans */
+    CFG_BOOL("scroll_history_infinite", FALSE, CFGF_NONE),
     CFG_BOOL("scroll_background", TRUE, CFGF_NONE),
     CFG_BOOL("scroll_on_output", FALSE, CFGF_NONE),
     CFG_BOOL("notebook_border", FALSE, CFGF_NONE),
@@ -136,6 +153,8 @@ static cfg_opt_t config_opts[] = {
     CFG_BOOL("auto_hide_on_mouse_leave", FALSE, CFGF_NONE),
     /* Whether we limit the length of a tab title */
     CFG_BOOL("title_max_length_flag", TRUE, CFGF_NONE),
+    /* Whether to set a new tab's working dir to the current tab's */
+    CFG_BOOL("inherit_working_dir", TRUE, CFGF_NONE),
     CFG_END()
 };
 
@@ -179,10 +198,7 @@ gint config_init (const gchar *config_file)
 			DEBUG_ERROR ("Problem parsing config");
 			g_printerr (_("Problem when opening config file\n"));
 			return 1;
-		} else if (ret == CFG_PARSE_ERROR) {
-			DEBUG_ERROR ("Problem parsing config");
-			g_printerr (_("Problem while parsing config file\n"));
-        } else if (ret != CFG_SUCCESS) {
+		} else if (ret != CFG_SUCCESS) {
             DEBUG_ERROR ("Problem parsing config.");
 			g_printerr (_("An unexpected error occured while "
                 "parsing the config file\n"));

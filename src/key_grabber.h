@@ -10,19 +10,18 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef TILDA_KEY_GRABBER_C
 #define TILDA_KEY_GRABBER_C
 
-#include <tilda_window.h>
+#include "tilda_window.h"
 
 G_BEGIN_DECLS
 
 enum pull_state { PULL_UP, PULL_DOWN, PULL_TOGGLE };
-void pull (struct tilda_window_ *tw, enum pull_state state);
+void pull (struct tilda_window_ *tw, enum pull_state state, gboolean force_hide);
 
 extern void generate_animation_positions (tilda_window *tw);
 

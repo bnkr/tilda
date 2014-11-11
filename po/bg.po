@@ -1,27 +1,27 @@
-# Hungarian translation for tilda
-# Copyright (c) 2008 Rosetta Contributors and Canonical Ltd 2008
+# Bulgarian translation for tilda
+# Copyright (c) 2014 Rosetta Contributors and Canonical Ltd 2014
 # This file is distributed under the same license as the tilda package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2008.
+# Anton Antonov <syndbe@gmail.com>, 2014.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: tilda\n"
 "Report-Msgid-Bugs-To: sloutri@iit.edu\n"
 "POT-Creation-Date: 2014-10-16 17:06+0200\n"
-"PO-Revision-Date: 2008-03-05 00:28+0000\n"
-"Last-Translator: Pittmann Tamás <zaivaldi@gmail.com>\n"
-"Language-Team: Hungarian <hu@li.org>\n"
-"Language: hu\n"
+"PO-Revision-Date: 2014-07-30 22:44+0000\n"
+"Last-Translator: Anton Antonov <syndbe@gmail.com>\n"
+"Language-Team: Bulgarian <bg@li.org>\n"
+"Language: bg\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2008-04-28 05:36+0000\n"
-"X-Generator: Launchpad (build Unknown)\n"
+"X-Launchpad-Export-Date: 2014-07-30 22:48+0000\n"
+"X-Generator: Launchpad (build 17131)\n"
 
 #: src/tilda.ui:69
 #, fuzzy
 msgid "Close Tilda"
-msgstr "Fül _bezárása"
+msgstr "_Затвори подпрозорец"
 
 #: src/tilda.ui:72
 msgid "Open a new terminal"
@@ -58,7 +58,7 @@ msgstr ""
 #: src/tilda.ui:112
 #, fuzzy
 msgid "Hide Terminal"
-msgstr "Hangos terminál csengő"
+msgstr "Звучен Terminal Bell"
 
 #: src/tilda.ui:123
 msgid "Isn't displayed"
@@ -75,12 +75,12 @@ msgstr ""
 #: src/tilda.ui:132
 #, fuzzy
 msgid "Replace initial title"
-msgstr "Ablakcím induláskor:"
+msgstr "Първоначално Заглавие:"
 
 #: src/tilda.ui:143
 #, fuzzy
 msgid "Drop to the default shell"
-msgstr "Nem tudom elindítani az alapértelmezett héjat: %s\n"
+msgstr "Не може да пусне shell по подразбиране: %s\n"
 
 #: src/tilda.ui:146
 msgid "Restart the command"
@@ -139,7 +139,7 @@ msgstr ""
 msgid "Escape sequence"
 msgstr ""
 "ASCII DEL\n"
-"Escape sorozat\n"
+"Escape последователност\n"
 "Control-H"
 
 #: src/tilda.ui:243 src/tilda.ui:260
@@ -148,31 +148,31 @@ msgstr ""
 
 #: src/tilda.ui:278
 msgid "Tilda Config"
-msgstr "Tilda Beállítás"
+msgstr "Tilda конфигурация"
 
 #: src/tilda.ui:355
 msgid "Enable Double Buffering"
-msgstr "Dupla gyorstár engedélyezése"
+msgstr "Позволи двойно буфериране"
 
 #: src/tilda.ui:371 src/tilda.c:322
 msgid "Start Tilda hidden"
-msgstr "Tilda indítása rejtve"
+msgstr "Стартирай Tilda скрита"
 
 #: src/tilda.ui:387
 msgid "Always on top"
-msgstr "Mindig felül"
+msgstr "Винаги най-отгоре"
 
 #: src/tilda.ui:403
 msgid "Display on all workspaces"
-msgstr "Minden munkaterületen megjelenjen"
+msgstr "Покажи всички работни среди"
 
 #: src/tilda.ui:419
 msgid "Do not show in taskbar"
-msgstr "Ne jelenjen meg a feladatlistában"
+msgstr "Не показвай в лентата на задачите"
 
 #: src/tilda.ui:435
 msgid "Show Notebook Border"
-msgstr "Keret megjelenítése"
+msgstr "Покажи тефтерски ръбове"
 
 #: src/tilda.ui:452
 msgid "Non-focus Pull Up Behaviour:"
@@ -180,39 +180,39 @@ msgstr ""
 
 #: src/tilda.ui:492
 msgid "<b>Window Display</b>"
-msgstr "<b>Ablak beállítások</b>"
+msgstr "<b>Прозорец - представяне</b>"
 
 #: src/tilda.ui:531
 msgid "Cursor Blinks"
-msgstr "Villogó kurzor"
+msgstr "Мигащ курсор"
 
 #: src/tilda.ui:547
 msgid "Audible Terminal Bell"
-msgstr "Hangos terminál csengő"
+msgstr "Звучен Terminal Bell"
 
 #: src/tilda.ui:569
 msgid "<b>Terminal Display</b>"
-msgstr "<b>Terminál beállítások</b>"
+msgstr "<b>Терминал - представяне</b>"
 
 #: src/tilda.ui:625
 msgid "Enable Antialiasing"
-msgstr "Élsimítás bekapcsolása"
+msgstr "Позволи antialiasing"
 
 #: src/tilda.ui:641
 msgid "Allow Bold Text"
-msgstr "Félkövér szöveg engedélyezése"
+msgstr "Позволи удебелен текст"
 
 #: src/tilda.ui:660
 msgid "Position of Tabs:"
-msgstr "Fülek helye"
+msgstr "Позиция на подпрозорци:"
 
 #: src/tilda.ui:693
 msgid "Font:"
-msgstr "Betűkészlet:"
+msgstr "Шрифт:"
 
 #: src/tilda.ui:710
 msgid "<b>Font</b>"
-msgstr "<b>Betűkészlet</b>"
+msgstr "<b>Шрифт</b>"
 
 #: src/tilda.ui:763
 msgid "Hide Tilda when mouse leaves it"
@@ -229,7 +229,7 @@ msgstr ""
 #: src/tilda.ui:816
 #, fuzzy
 msgid "<b>Auto Hide</b>"
-msgstr "<b>Cím</b>"
+msgstr "<b>Заглавие</b>"
 
 #: src/tilda.ui:858
 msgid "When last terminal is closed:"
@@ -238,7 +238,7 @@ msgstr ""
 #: src/tilda.ui:894
 #, fuzzy
 msgid "<b>Program Exit</b>"
-msgstr "<b>Elhelyezés</b>"
+msgstr "<b>Позиция</b>"
 
 #: src/tilda.ui:916
 msgid ""
@@ -248,7 +248,7 @@ msgstr ""
 
 #: src/tilda.ui:933
 msgid "General"
-msgstr "Általános"
+msgstr "Общ"
 
 #: src/tilda.ui:982
 msgid "Word Characters:"
@@ -261,19 +261,19 @@ msgstr ""
 #: src/tilda.ui:1049
 #, fuzzy
 msgid "Web Browser *:"
-msgstr "Webböngésző"
+msgstr "Уеб Браузър"
 
 #: src/tilda.ui:1065
 msgid "<b>URL Handling</b>"
-msgstr "<b>URL kezelés</b>"
+msgstr "<b>Обработка на URL</b>"
 
 #: src/tilda.ui:1100
 msgid "Initial Title:"
-msgstr "Ablakcím induláskor:"
+msgstr "Първоначално Заглавие:"
 
 #: src/tilda.ui:1112
 msgid "Dynamically-set Title:"
-msgstr "Dinamikus ablakcím:"
+msgstr "Динамично зададено Заглавие:"
 
 #: src/tilda.ui:1162
 msgid "Limit maximum length of tab title:"
@@ -281,23 +281,23 @@ msgstr ""
 
 #: src/tilda.ui:1200
 msgid "<b>Title</b>"
-msgstr "<b>Cím</b>"
+msgstr "<b>Заглавие</b>"
 
 #: src/tilda.ui:1230
 msgid "Run a custom command instead of the shell"
-msgstr "Héj helyett saját parancs futtatása"
+msgstr "Пусни произволна команда вместо shell"
 
 #: src/tilda.ui:1247
 msgid "Custom Command:"
-msgstr "Saját parancs:"
+msgstr "Произволна команда:"
 
 #: src/tilda.ui:1261
 msgid "When Command Exits:"
-msgstr "Parancs befejeződésekor:"
+msgstr "Когато командата приключи:"
 
 #: src/tilda.ui:1316
 msgid "<b>Command</b>"
-msgstr "<b>Parancs</b>"
+msgstr "<b>Команда</b>"
 
 #: src/tilda.ui:1354
 msgid ""
@@ -309,71 +309,71 @@ msgstr ""
 
 #: src/tilda.ui:1375
 msgid "Title and Command"
-msgstr "Cím és parancs"
+msgstr "Заглавие и команда"
 
 #: src/tilda.ui:1408 src/tilda.ui:1501
 msgid "Percentage"
-msgstr "Százalék"
+msgstr "Процент"
 
 #: src/tilda.ui:1435 src/tilda.ui:1514
 msgid "In Pixels"
-msgstr "Képpont"
+msgstr "В пиксели"
 
 #: src/tilda.ui:1467
 msgid "<b>Height</b>"
-msgstr "<b>Magasság</b>"
+msgstr "<b>Височина</b>"
 
 #: src/tilda.ui:1560
 msgid "<b>Width</b>"
-msgstr "<b>Szélesség</b>"
+msgstr "<b>Широчина</b>"
 
 #: src/tilda.ui:1592
 msgid "Centered Horizontally"
-msgstr "Vizszintesen középre"
+msgstr "Центрирана хоризонтално"
 
 #: src/tilda.ui:1610
 msgid "Centered Vertically"
-msgstr "Függőlegesen középre"
+msgstr "Центрирана вертикално"
 
 #: src/tilda.ui:1632 src/tilda.c:329
 msgid "X Position"
-msgstr "X pozíció"
+msgstr "X позиция"
 
 #: src/tilda.ui:1647 src/tilda.c:330
 msgid "Y Position"
-msgstr "Y pozíció"
+msgstr "Y позиция"
 
 #: src/tilda.ui:1699
 msgid "<b>Position</b>"
-msgstr "<b>Elhelyezés</b>"
+msgstr "<b>Позиция</b>"
 
 #: src/tilda.ui:1734
 msgid "Enable Transparency"
-msgstr "Átlátszóság engedélyezése"
+msgstr "Позволи прозрачност"
 
 #: src/tilda.ui:1752
 msgid "Level of Transparency"
-msgstr "Átlátszóság szintje:"
+msgstr "Ниво на прозрачност"
 
 #: src/tilda.ui:1778
 msgid "Animated Pulldown"
-msgstr "Animált lenyitás"
+msgstr "Анимирано падане"
 
 #: src/tilda.ui:1795
 msgid "Use Image for Background"
-msgstr "Kép használata háttérként"
+msgstr "Използвай изображение за фон"
 
 #: src/tilda.ui:1815
 msgid "Animation Delay (usec)"
-msgstr "Animáció késleltetése (usec)"
+msgstr "Забавяне на анимацията (usec)"
 
 #: src/tilda.ui:1832
 msgid "Animation Orientation"
-msgstr "Animáció iránya"
+msgstr "Ориентация на анимацията"
 
 #: src/tilda.ui:1905
 msgid "<b>Extras</b>"
-msgstr "<b>Extrák</b>"
+msgstr "<b>Екстри</b>"
 
 #: src/tilda.ui:1940
 msgid "Monitor:"
@@ -382,27 +382,27 @@ msgstr ""
 #: src/tilda.ui:2003
 #, fuzzy
 msgid "<b>Select monitor</b>"
-msgstr "<b>Cím</b>"
+msgstr "<b>Шрифт</b>"
 
 #: src/tilda.ui:2023
 msgid "Appearance"
-msgstr "Megjelenés"
+msgstr "Външен вид"
 
 #: src/tilda.ui:2069
 msgid "Built-in Schemes"
-msgstr "Beépített színsémák"
+msgstr "Вградени цветови схеми"
 
 #: src/tilda.ui:2100
 msgid "Text Color"
-msgstr "Szövegszín"
+msgstr "Цвят на текст"
 
 #: src/tilda.ui:2114
 msgid "Background Color"
-msgstr "Háttérszín"
+msgstr "Цвят на фон"
 
 #: src/tilda.ui:2163
 msgid "<b>Foreground and Background Colors</b>"
-msgstr "<b>Előtér és háttérszínek</b>"
+msgstr "<b>Цветове на преден и заден план</b>"
 
 #: src/tilda.ui:2194 src/tilda.ui:2801
 msgid "    "
@@ -421,29 +421,29 @@ msgstr ""
 #: src/tilda.ui:2519
 #, fuzzy
 msgid "Built-in schemes:"
-msgstr "Beépített színsémák"
+msgstr "Вградени цветови схеми"
 
 #: src/tilda.ui:2546
 #, fuzzy
 msgid "<b>Palette</b>"
-msgstr "<b>Cím</b>"
+msgstr "<b>Заглавие</b>"
 
 #: src/tilda.ui:2568
 msgid "Colors"
-msgstr "Színek"
+msgstr "Цветове"
 
 #: src/tilda.ui:2619
 msgid "lines"
-msgstr "sor"
+msgstr "редове"
 
 #: src/tilda.ui:2659
 msgid "Scrollbar is:"
-msgstr "Görgetősáv helye:"
+msgstr "Скрол лента е:"
 
 #: src/tilda.ui:2669
 #, fuzzy
 msgid "Limit scrollback to:"
-msgstr "Visszagörgethető sorok száma"
+msgstr "Scrollback:"
 
 #: src/tilda.ui:2673
 msgid "Unselect for unlimited scrollback."
@@ -451,27 +451,27 @@ msgstr ""
 
 #: src/tilda.ui:2686
 msgid "Scroll on Output"
-msgstr "Görgetés kiíráskor"
+msgstr "Скрол на извод"
 
 #: src/tilda.ui:2703
 msgid "Scroll on Keystroke"
-msgstr "Görgetés billentyű leütésre"
+msgstr "Скрол на натискане на бутон"
 
 #: src/tilda.ui:2720
 msgid "Scroll Background"
-msgstr "Háttér görgetése"
+msgstr "Скрол на фон"
 
 #: src/tilda.ui:2744
 msgid "<b>Scrolling</b>"
-msgstr "<b>Görgetés</b>"
+msgstr "<b>Скролване</b>"
 
 #: src/tilda.ui:2766
 msgid "Scrolling"
-msgstr "Görgetés"
+msgstr "Скролване"
 
 #: src/tilda.ui:2784
 msgid "<b>Compatibility</b>"
-msgstr "<b>Kompatibilitás</b>"
+msgstr "<b>Съвместимост</b>"
 
 #: src/tilda.ui:2820
 msgid ""
@@ -480,27 +480,26 @@ msgid ""
 "applications and operating systems that expect different terminal behavior.</"
 "i></small>"
 msgstr ""
-"<small><i><b>Megjegyzés:</b> Ezek az opciók néhány program helytelen "
-"működését eredményezhetik. Csak azért vannak itt, hogy biztosítsák a "
-"terminál bizonyos programokkal és operációs rendszerekkel való "
-"együttműködését, amelyek más igényeket támasztanak a terminállal szemben.</"
-"i></small>"
+"<small><i><b>Забележка:</b> Тези настройки могат да доведът до неправилно "
+"поведение на някои приложения. Те са тук само, за да позволят заобикаляне на "
+"приложения и операционни системи, които очакват различно терминално "
+"поведение.</i></small>"
 
 #: src/tilda.ui:2843
 msgid "_Delete key generates:"
-msgstr "A _Delete billentyű által küldött kód:"
+msgstr "_Delete копчето генерира:"
 
 #: src/tilda.ui:2859
 msgid "_Backspace key generates:"
-msgstr "A _Backspace billentyű által küldött kód:"
+msgstr "_Backspace копчето генерира:"
 
 #: src/tilda.ui:2922
 msgid "_Reset Compatibility Options to Defaults"
-msgstr "_Kompatibilitási beállítások alapértelmezettre állítása"
+msgstr "_Върни настройките за съвместимост по подразбиране"
 
 #: src/tilda.ui:2959
 msgid "Compatibility"
-msgstr "Kompatibilitás"
+msgstr "Съвместимост"
 
 #: src/tilda.ui:2987 src/tilda.ui:3027 src/tilda.ui:3065 src/tilda.ui:3103
 #: src/tilda.ui:3142 src/tilda.ui:3182 src/tilda.ui:3220 src/tilda.ui:3258
@@ -514,7 +513,7 @@ msgstr ""
 #: src/tilda.ui:3000
 #, fuzzy
 msgid "<b>Paste</b>"
-msgstr "<b>Cím</b>"
+msgstr "<b>Заглавие</b>"
 
 #: src/tilda.ui:3040
 msgid "<b>Go To Next Tab</b>"
@@ -523,12 +522,12 @@ msgstr ""
 #: src/tilda.ui:3078
 #, fuzzy
 msgid "<b>Quit</b>"
-msgstr "<b>Cím</b>"
+msgstr "<b>Заглавие</b>"
 
 #: src/tilda.ui:3116
 #, fuzzy
 msgid "<b>Add Tab</b>"
-msgstr "<b>Cím</b>"
+msgstr "<b>Заглавие</b>"
 
 #: src/tilda.ui:3155
 msgid "<b>Go To Tab 10</b>"
@@ -561,17 +560,17 @@ msgstr ""
 #: src/tilda.ui:3425
 #, fuzzy
 msgid "<b>Close Tab</b>"
-msgstr "Fül _bezárása"
+msgstr "_Затвори подпрозорец"
 
 #: src/tilda.ui:3465
 #, fuzzy
 msgid "<b>Copy</b>"
-msgstr "<b>Betűkészlet</b>"
+msgstr "<b>Шрифт</b>"
 
 #: src/tilda.ui:3503
 #, fuzzy
 msgid "<b>Pull Down Terminal</b>"
-msgstr "<b>Terminálnyitó gyorsbillentyű</b>"
+msgstr "<b>Падащо копче</b>"
 
 #: src/tilda.ui:3539
 msgid "<b>Go To Tab 6</b>"
@@ -590,14 +589,13 @@ msgid "<b>Go To Tab 9</b>"
 msgstr ""
 
 #: src/tilda.ui:3699
-#, fuzzy
 msgid "<b>Move Tab Left</b>"
-msgstr "Fül _bezárása"
+msgstr ""
 
 #: src/tilda.ui:3737
 #, fuzzy
 msgid "<b>Move Tab Right</b>"
-msgstr "<b>Magasság</b>"
+msgstr "<b>Височина</b>"
 
 #: src/tilda.ui:3777
 msgid "<b>Toggle Fullscreen</b>"
@@ -605,20 +603,20 @@ msgstr ""
 
 #: src/tilda.ui:3799
 msgid "Keybindings"
-msgstr "Gyorsbillentyű"
+msgstr "Клавишни комбинации"
 
 #: src/callback_func.c:53
 msgid "Untitled"
-msgstr "Névtelen"
+msgstr "Неозаглавен"
 
 #: src/callback_func.c:71
 msgid "Bad value for \"d_set_title\" in config file\n"
-msgstr "Hibás érték a konfigfájlban itt: \"d_set_title\"\n"
+msgstr "Невалидна стойност за \"d_set_title\" в конфигурационният файл\n"
 
 #: src/configsys.c:199
 #, fuzzy
 msgid "Problem when opening config file\n"
-msgstr "Hiba a konfigfájlban.\n"
+msgstr "Проблем при разчитане на конфигурационният файл"
 
 #: src/configsys.c:203
 msgid "An unexpected error occured while parsing the config file\n"
@@ -626,70 +624,70 @@ msgstr ""
 
 #: src/configsys.c:371
 msgid "Unable to sync the config file to disk\n"
-msgstr "Nem tudom elvégezni a konfigfájl szinkronizálását.\n"
+msgstr "Не може да синхронизира конфигурационният файл на диска\n"
 
 #: src/configsys.c:381
 msgid "Unable to close the config file\n"
-msgstr "Nem tudom bezárni a konfigfájlt.\n"
+msgstr "Не може да затвори конфигурационният файл\n"
 
 #: src/configsys.c:390
 #, c-format
 msgid "Unable to write the config file to %s\n"
-msgstr "Nem tudom írni a konfigfájlt: %s\n"
+msgstr "Не може да запише конфигурационният фалй на %s\n"
 
 #: src/tilda.c:216
 #, c-format
 msgid "Unable to run command: `%s'\n"
-msgstr "A '%s' parancs futtatása nem sikerült\n"
+msgstr "Не може да изпълни командата:`%s'\n"
 
 #: src/tilda.c:255 src/tilda.c:492
 #, c-format
 msgid "Unable to open lock directory: %s\n"
-msgstr "Nem tudom megnyitni a zárolási könyvtárat :%s\n"
+msgstr "Не може да отвори директория: %s\n"
 
 #: src/tilda.c:319
 msgid "Use Antialiased Fonts"
-msgstr "Élsimított betűkészletek használata"
+msgstr "Използвай Antialised шрифтове"
 
 #: src/tilda.c:320
 msgid "Set the background color"
-msgstr "Háttérszín beállítása"
+msgstr "Сложи фоннов цвят"
 
 #: src/tilda.c:321
 msgid "Run a command at startup"
-msgstr "Parancs futtatása induláskor"
+msgstr "Изпълни команда при стартиране"
 
 #: src/tilda.c:323
 msgid "Set the font to the following string"
-msgstr "Betűkészlet beállítása erre a karakterláncra"
+msgstr "Сложи шрифт на следният стринг"
 
 #: src/tilda.c:324
 msgid "Scrollback Lines"
-msgstr "Visszagördíthető sorok száma"
+msgstr "Scrollback редове"
 
 #: src/tilda.c:325
 msgid "Use Scrollbar"
-msgstr "Görgetősáv használata"
+msgstr "Използвай скрол лента"
 
 #: src/tilda.c:326
 msgid "Opaqueness: 0-100%"
-msgstr "Átlátszóság: 0-100%"
+msgstr "Непрозрачност: 0-100%"
 
 #: src/tilda.c:327
 msgid "Print the version, then exit"
-msgstr "Verzió kiírása és kilépés"
+msgstr "Принтирай версията и излез"
 
 #: src/tilda.c:328
 msgid "Set Initial Working Directory"
-msgstr "Kezdő munkakönyvtár beállítása"
+msgstr "Определи началната работна директория"
 
 #: src/tilda.c:331
 msgid "Set Background Image"
-msgstr "Háttérkép beállítása"
+msgstr "Определи фонново изображение"
 
 #: src/tilda.c:332
 msgid "Show Configuration Wizard"
-msgstr "Indítás konfigurációs ablakkal"
+msgstr "Покажи помощник при конфигурация"
 
 #: src/tilda.c:348
 #, c-format
@@ -699,9 +697,10 @@ msgid ""
 "\n"
 "Error message: %s\n"
 msgstr ""
-"Hiba a megadott opciókban. Próbáld a \"tilda --help\"-et.\n"
+"Грешка при разчитане на командните опции. Опитай \"tilda --help\"\n"
+"за да видиш всички възможни опциии.\n"
 "\n"
-"Hiba: %s\n"
+"Грешка: %s\n"
 
 #: src/tilda.c:445
 #, c-format
@@ -722,39 +721,40 @@ msgstr ""
 msgid ""
 "The keybinding you chose for \"Pull Down Terminal\" is invalid. Please "
 "choose another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/tilda_terminal.c:408
 #, fuzzy, c-format
 msgid "Problem reading link %s: %s\n"
-msgstr "Parancs értelmezési hiba: %s\n"
+msgstr "Проблем при разчитане на : %s\n"
 
 #: src/tilda_terminal.c:446
-#, c-format
+#, fuzzy, c-format
 msgid "Problem parsing custom command: %s\n"
-msgstr "Parancs értelmezési hiba: %s\n"
+msgstr "Проблем при разчитане на : %s\n"
 
 #: src/tilda_terminal.c:447 src/tilda_terminal.c:476
 msgid "Launching default shell instead\n"
-msgstr "Helyette indítom az alapértelmezett héjat.\n"
+msgstr "Пускам вместо това shell по подразбиране\n"
 
 #: src/tilda_terminal.c:475
 #, c-format
 msgid "Unable to launch custom command: %s\n"
-msgstr "Nem tudom elindítani a megadott felhasználói parancsot: %s\n"
+msgstr "Не може да пусне командата по избор: %s\n"
 
 #: src/tilda_terminal.c:530
 #, c-format
 msgid "Unable to launch default shell: %s\n"
-msgstr "Nem tudom elindítani az alapértelmezett héjat: %s\n"
+msgstr "Не може да пусне shell по подразбиране: %s\n"
 
 #: src/tilda_terminal.c:818
 msgid "_New Tab"
-msgstr "Új _fül"
+msgstr "_Нов подпрозорец"
 
 #: src/tilda_terminal.c:822
 msgid "_Close Tab"
-msgstr "Fül _bezárása"
+msgstr "_Затвори подпрозорец"
 
 #: src/tilda_terminal.c:834
 msgid "Toggle fullscreen"
@@ -763,20 +763,20 @@ msgstr ""
 #: src/tilda_terminal.c:930
 #, c-format
 msgid "Failed to launch the web browser. The command was `%s'\n"
-msgstr "Nem tudtam elindítani a böngészőt, parancs: %s\n"
+msgstr "Не успя да пусне уеб брайзъра. Командата беше `%s'\n"
 
 #: src/tilda_window.c:101
 msgid "You have a bad tab_pos in your configuration file\n"
-msgstr "A konfigfájlban hibás a fülek pozíciója\n"
+msgstr "Вие имате невалидна tab_pos във вашият конфигурационен файл\n"
 
 #: src/tilda_window.c:509
 #, c-format
 msgid "Unable to set tilda's icon: %s\n"
-msgstr "Nem tudom a tilda ikonját beállítani: %s\n"
+msgstr "Не може да зададе икона на tilda: %s\n"
 
 #: src/tilda_window.c:695
 msgid "Out of memory, cannot create tab\n"
-msgstr "Elfogyott a memória. a fül nem hozható létre\n"
+msgstr "Недостиг на памет, не може да създаде подпрозорец\n"
 
 #: src/wizard.c:189
 msgid "Tango"
@@ -797,141 +797,161 @@ msgstr ""
 #: src/wizard.c:286
 #, fuzzy, c-format
 msgid "Tilda %d Config"
-msgstr "Tilda Beállítás"
+msgstr "Tilda конфигурация"
 
 #: src/wizard.c:374
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Add Tab\" is invalid. Please choose another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:376
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Close Tab\" is invalid. Please choose another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:378
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Next Tab\" is invalid. Please choose another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:380
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Previous Tab\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:382
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Move Tab to Left\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:384
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Move Tab to Right\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:386
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Copy\" is invalid. Please choose another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:388
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Paste\" is invalid. Please choose another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:390
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Quit\" is invalid. Please choose another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:392
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 1\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:394
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 2\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:396
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 3\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:398
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 4\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:400
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 5\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:402
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 6\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:404
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 7\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:406
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 8\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:408
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 9\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:410
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Go To Tab 10\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:412
 #, fuzzy
 msgid ""
 "The keybinding you chose for \"Toggle Fullscreen\" is invalid. Please choose "
 "another."
-msgstr "A választott gyorsbillentyű érvénytelen. Válasszon másikat."
+msgstr ""
+"Клавишната комбинация, която избрахте е невалидна. Моля изберете друга."
 
 #: src/wizard.c:870
 msgid "Invalid non-focus pull up behaviour, ignoring\n"
@@ -939,7 +959,7 @@ msgstr ""
 
 #: src/wizard.c:895
 msgid "Invalid tab position setting, ignoring\n"
-msgstr "Érvénytelen fülpozíció, figyelmen kívül lesz hagyva\n"
+msgstr "Невалидна настройка за позиция на подпрозорци, игнориране\n"
 
 #: src/wizard.c:1871
 msgid "Enter keyboard shortcut"
@@ -947,7 +967,7 @@ msgstr ""
 
 #, fuzzy
 #~ msgid "Problem while parsing config file\n"
-#~ msgstr "Hiba a konfigfájlban.\n"
+#~ msgstr "Проблем при разчитане на конфигурационният файл"
 
 #~ msgid ""
 #~ "Top\n"
@@ -955,10 +975,10 @@ msgstr ""
 #~ "Left\n"
 #~ "Right"
 #~ msgstr ""
-#~ "Fent\n"
-#~ "Lent\n"
-#~ "Balra\n"
-#~ "Jobbra"
+#~ "Горде\n"
+#~ "Долу\n"
+#~ "Ляво\n"
+#~ "Дясно"
 
 #~ msgid ""
 #~ "Isn't displayed\n"
@@ -966,19 +986,19 @@ msgstr ""
 #~ "Goes before initial title\n"
 #~ "Replace initial title"
 #~ msgstr ""
-#~ "Nincs\n"
-#~ "Az indulási cím után\n"
-#~ "Az indulási cím előtt\n"
-#~ "Az indulási cím cseréje"
+#~ "Не е показано\n"
+#~ "Отива след първоначалното заглавие\n"
+#~ "Отива преди първоначалното заглавие\n"
+#~ "Заменя първоначалното заглавие"
 
 #~ msgid ""
 #~ "Hold the terminal open\n"
 #~ "Restart the command\n"
 #~ "Exit the terminal"
 #~ msgstr ""
-#~ "A terminál maradjon megnyitva\n"
-#~ "Induljon újra a parancs\n"
-#~ "Kilépés a terminálból"
+#~ "Задръж терминала отворен\n"
+#~ "Рестартирай командата\n"
+#~ "Излез от терминала"
 
 #~ msgid ""
 #~ "Custom\n"
@@ -986,22 +1006,25 @@ msgstr ""
 #~ "Black on White\n"
 #~ "White on Black"
 #~ msgstr ""
-#~ "Saját beállítás\n"
-#~ "Zöld a feketén\n"
-#~ "Fekete a fehéren\n"
-#~ "Fehér a Feketén"
+#~ "Произволна\n"
+#~ "Зелено на черно\n"
+#~ "Черно на бяло\n"
+#~ "Бяло на черно"
 
 #~ msgid ""
 #~ "On the Left\n"
 #~ "On the Right\n"
 #~ "Disabled"
 #~ msgstr ""
-#~ "Balra\n"
-#~ "Jobbra\n"
-#~ "Letiltva"
+#~ "В ляво\n"
+#~ "В дясно\n"
+#~ "Забранено"
 
 #~ msgid "Key Binding"
-#~ msgstr "Gyorsbillentyű"
+#~ msgstr "Клавишна комбинация"
 
 #~ msgid "Grab Keybinding"
-#~ msgstr "Gyorsbillentyű megadása"
+#~ msgstr "Прихвани клавишна комбинация"
+
+#~ msgid "gtk-close"
+#~ msgstr "gtk-close"

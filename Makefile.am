@@ -1,8 +1,6 @@
 ## Process this file with automake to produce a Makefile.in
 # vim: set noexpandtab ts=8 sts=8 sw=8:
 
-AUTOMAKE_OPTIONS = gnu
-
 SUBDIRS = po
 
 CLEANFILES = tilda.desktop
@@ -44,10 +42,7 @@ Applications_DATA = tilda.desktop
 Pixmapsdir = ${datadir}/pixmaps
 Pixmaps_DATA = tilda.png
 
-# This will install tilda.glade to ${pkgdatadir}
-pkgdata_DATA = tilda.glade
-
-EXTRA_DIST = tilda.desktop.in tilda.png tilda.glade
+EXTRA_DIST = tilda.desktop.in tilda.png
 
 tilda.desktop: tilda.desktop.in
 	sed -e 's|\@BINDIR\@|$(bindir)|' \
@@ -60,10 +55,3 @@ bin_PROGRAMS =
 
 include src/Makefile.am
 
-# We register this uninstall hook to remove the ${pkgdatadir}, which
-# is created by the pkgdata_DATA directive above. Without this hook
-# the folder would be left over after a make uninstall.
-# We wrap it into and if-then because otherwise make distcheck would
-# fail.
-uninstall-hook:
-	if test -d ${pkgdatadir}; then rmdir ${pkgdatadir}; fi

@@ -10,15 +10,14 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef WIZARD_H
 #define WIZARD_H
 
-#include <tilda_window.h>
-#include <tilda_terminal.h>
+#include "tilda_window.h"
+#include "tilda_terminal.h"
 
 #include <gtk/gtk.h>
 

@@ -14,9 +14,7 @@
  * Library General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "eggaccelerators.h"
@@ -37,8 +35,6 @@ enum {
     EGG_MODMAP_ENTRY_LAST    = 8
 };
 
-#define MODMAP_ENTRY_TO_MODIFIER(x) (1 << (x))
-
 typedef struct {
     EggVirtualModifierType mapping[EGG_MODMAP_ENTRY_LAST];
 } EggModmap;
@@ -48,20 +44,14 @@ const EggModmap* egg_keymap_get_modmap (GdkKeymap *keymap);
 static inline gboolean
 is_alt (const gchar *string)
 {
-    return ((string[0] == '<') &&
-            (string[1] == 'a' || string[1] == 'A') &&
-            (string[2] == 'l' || string[2] == 'L') &&
-            (string[3] == 't' || string[3] == 'T') &&
-            (string[4] == '>'));
+    const char *sample = "<ALT>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
 is_ctl (const gchar *string) {
-    return ((string[0] == '<') &&
-            (string[1] == 'c' || string[1] == 'C') &&
-            (string[2] == 't' || string[2] == 'T') &&
-            (string[3] == 'l' || string[3] == 'L') &&
-            (string[4] == '>'));
+    const char *sample = "<CTL>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
@@ -76,104 +66,56 @@ is_modx (const gchar *string) {
 
 static inline gboolean
 is_ctrl (const gchar *string) {
-    return ((string[0] == '<') &&
-            (string[1] == 'c' || string[1] == 'C') &&
-            (string[2] == 't' || string[2] == 'T') &&
-            (string[3] == 'r' || string[3] == 'R') &&
-            (string[4] == 'l' || string[4] == 'L') &&
-            (string[5] == '>'));
+    const char *sample = "<CTRL>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
 is_shft (const gchar *string) {
-    return ((string[0] == '<') &&
-        (string[1] == 's' || string[1] == 'S') &&
-        (string[2] == 'h' || string[2] == 'H') &&
-        (string[3] == 'f' || string[3] == 'F') &&
-        (string[4] == 't' || string[4] == 'T') &&
-        (string[5] == '>'));
+    const char *sample = "<SHFT>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
 is_shift (const gchar *string) {
-    return ((string[0] == '<') &&
-            (string[1] == 's' || string[1] == 'S') &&
-            (string[2] == 'h' || string[2] == 'H') &&
-            (string[3] == 'i' || string[3] == 'I') &&
-            (string[4] == 'f' || string[4] == 'F') &&
-            (string[5] == 't' || string[5] == 'T') &&
-            (string[6] == '>'));
+    const char *sample = "<SHIFT>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
 is_control (const gchar *string) {
-    return ((string[0] == '<') &&
-            (string[1] == 'c' || string[1] == 'C') &&
-            (string[2] == 'o' || string[2] == 'O') &&
-            (string[3] == 'n' || string[3] == 'N') &&
-            (string[4] == 't' || string[4] == 'T') &&
-            (string[5] == 'r' || string[5] == 'R') &&
-            (string[6] == 'o' || string[6] == 'O') &&
-            (string[7] == 'l' || string[7] == 'L') &&
-            (string[8] == '>'));
+    const char *sample = "<CONTROL>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
 is_release (const gchar *string) {
-    return ((string[0] == '<') &&
-            (string[1] == 'r' || string[1] == 'R') &&
-            (string[2] == 'e' || string[2] == 'E') &&
-            (string[3] == 'l' || string[3] == 'L') &&
-            (string[4] == 'e' || string[4] == 'E') &&
-            (string[5] == 'a' || string[5] == 'A') &&
-            (string[6] == 's' || string[6] == 'S') &&
-            (string[7] == 'e' || string[7] == 'E') &&
-            (string[8] == '>'));
+    const char *sample = "<RELEASE>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
 is_meta (const gchar *string) {
-    return ((string[0] == '<') &&
-            (string[1] == 'm' || string[1] == 'M') &&
-            (string[2] == 'e' || string[2] == 'E') &&
-            (string[3] == 't' || string[3] == 'T') &&
-            (string[4] == 'a' || string[4] == 'A') &&
-            (string[5] == '>'));
+    const char *sample = "<META>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
 is_super (const gchar *string) {
-    return ((string[0] == '<') &&
-            (string[1] == 's' || string[1] == 'S') &&
-            (string[2] == 'u' || string[2] == 'U') &&
-            (string[3] == 'p' || string[3] == 'P') &&
-            (string[4] == 'e' || string[4] == 'E') &&
-            (string[5] == 'r' || string[5] == 'R') &&
-            (string[6] == '>'));
+    const char *sample = "<SUPER>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
 is_hyper (const gchar *string) {
-    return ((string[0] == '<') &&
-            (string[1] == 'h' || string[1] == 'H') &&
-            (string[2] == 'y' || string[2] == 'Y') &&
-            (string[3] == 'p' || string[3] == 'P') &&
-            (string[4] == 'e' || string[4] == 'E') &&
-            (string[5] == 'r' || string[5] == 'R') &&
-            (string[6] == '>'));
+    const char *sample = "<HYPER>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 static inline gboolean
 is_primary (const gchar *string) {
-    return ((string[0] == '<') &&
-            (string[1] == 'p' || string[1] == 'P') &&
-            (string[2] == 'r' || string[2] == 'R') &&
-            (string[3] == 'i' || string[3] == 'I') &&
-            (string[4] == 'm' || string[4] == 'M') &&
-            (string[5] == 'a' || string[5] == 'A') &&
-            (string[6] == 'r' || string[6] == 'R') &&
-            (string[7] == 'y' || string[7] == 'Y') &&
-            (string[8] == '>'));
+    const char *sample = "<PRIMARY>";
+    return g_ascii_strncasecmp(string, sample, strlen(sample)) == 0;
 }
 
 
@@ -209,20 +151,20 @@ egg_accelerator_parse_virtual (const gchar            *accelerator,
 {
     guint keyval;
     GdkModifierType mods;
-    gint len;
+    size_t len;
     gboolean bad_keyval;
 
     if (accelerator_key)
       *accelerator_key = 0;
     if (accelerator_mods)
-      *accelerator_mods = 0;
+      *accelerator_mods = (EggVirtualModifierType) 0;
 
     g_return_val_if_fail (accelerator != NULL, FALSE);
 
     bad_keyval = FALSE;
 
     keyval = 0;
-    mods = 0;
+    mods = (GdkModifierType) 0;
     len = strlen (accelerator);
     while (len) {
         if (*accelerator == '<') {
@@ -307,7 +249,7 @@ egg_accelerator_parse_virtual (const gchar            *accelerator,
     if (accelerator_key)
         *accelerator_key = gdk_keyval_to_lower (keyval);
     if (accelerator_mods)
-        *accelerator_mods = mods;
+        *accelerator_mods = (EggVirtualModifierType) mods;
 
     return !bad_keyval;
 }
@@ -499,7 +441,7 @@ egg_keymap_virtualize_modifiers (GdkKeymap              *keymap,
         ++i;
 	}
 
-	*virtual_mods = virtual;
+	*virtual_mods = (EggVirtualModifierType) virtual;
 }
 
 static void

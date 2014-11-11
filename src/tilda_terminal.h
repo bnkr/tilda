@@ -10,14 +10,13 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef TILDA_TERMINALN_H
 #define TILDA_TERMINALN_H
 
-#include <tilda_window.h>
+#include "tilda_window.h"
 
 #include <gtk/gtk.h>
 
@@ -31,6 +30,7 @@ struct tilda_term_
     GtkWidget *hbox;
     GtkWidget *scrollbar;
     GRegex *http_regexp;
+    GPid pid;
     /* We remember if we have already dropped to the default
      * shell before, if so, then we know that this time we can
      * exit the program.
@@ -73,6 +73,7 @@ gint tilda_term_free (struct tilda_term_ *term);
 
 
 void tilda_term_set_scrollbar_position (tilda_term *tt, enum tilda_term_scrollbar_positions pos);
+char* tilda_term_get_cwd(tilda_term* tt);
 
 #define TILDA_TERM(tt) ((tilda_term *)(tt))
 

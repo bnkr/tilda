@@ -10,15 +10,14 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef TILDA_WINDOW_H
 #define TILDA_WINDOW_H
 
-#include <tilda_window.h>
-#include <tilda_terminal.h>
+#include "tilda_window.h"
+#include "tilda_terminal.h"
 
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -55,13 +54,17 @@ struct tilda_window_
     /* Should Tilda hide itself when mouse leaves it? */
     gboolean auto_hide_on_mouse_leave;
 
+    /* Should Tilda hide itself even if not focused */
+    gboolean hide_non_focused;
+
 	gboolean fullscreen;
 
     /* This field MUST be set before calling pull()! */
     enum tilda_positions { UP, DOWN } current_state;
+    gboolean focus_loss_on_keypress;
 };
 
-enum notebook_tab_positions { NB_TOP, NB_BOTTOM, NB_LEFT, NB_RIGHT };
+enum notebook_tab_positions { NB_TOP, NB_BOTTOM, NB_LEFT, NB_RIGHT, NB_HIDDEN };
 
 /**
  * tilda_window_add_tab ()

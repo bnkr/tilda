@@ -10,8 +10,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -19,14 +18,14 @@
 
 #include <tilda-config.h>
 
-#include <debug.h>
-#include <key_grabber.h>
-#include <tilda.h>
-#include <xerror.h>
+#include "debug.h"
+#include "key_grabber.h"
+#include "tilda.h"
+#include "xerror.h"
 #include <glib.h>
 #include <glib/gi18n.h>
-#include <configsys.h>
-#include <tomboykeybinder.h>
+#include "configsys.h"
+#include "tomboykeybinder.h"
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
@@ -178,16 +177,33 @@ static void process_all_pending_gtk_events ()
     gdk_flush ();
 }
 
-void pull (struct tilda_window_ *tw, enum pull_state state)
+/**
+* @force_hide: This option is used by the auto hide feature, so we can ignore the checks to focus tilda instead
+* of pulling up.
+*/
+void pull (struct tilda_window_ *tw, enum pull_state state, gboolean force_hide)
 {
     DEBUG_FUNCTION ("pull");
     DEBUG_ASSERT (tw != NULL);
     DEBUG_ASSERT (state == PULL_UP || state == PULL_DOWN || state == PULL_TOGGLE);
 
     gint i;
+    gboolean needsFocus = !tw->focus_loss_on_keypress
+            && !gtk_window_is_active(GTK_WINDOW(tw->window))
+            && !force_hide
+            && !tw->hide_non_focused;
 
-    if (tw->current_state == UP && state != PULL_UP)
-    {
+    if (tw->current_state == DOWN && needsFocus) {
+        /**
+        * See tilda_window.c in focus_out_event_cb for an explanation about focus_loss_on_keypress
+        * This conditional branch will only focus tilda but it does not actually pull the window up.
+        */
+        TRACE (g_print("Tilda window not focused but visible\n"));
+        gdk_x11_window_set_user_time(gtk_widget_get_window(tw->window),
+                tomboy_keybinder_get_current_event_time());
+        tilda_window_set_active(tw);
+    } else
+    if (tw->current_state == UP && state != PULL_UP) {
         /* Keep things here just like they are. If you use gtk_window_present() here, you
          * will introduce some weird graphical glitches. Also, calling gtk_window_move()
          * before showing the window avoids yet more glitches. You should probably not use
@@ -256,8 +272,9 @@ void pull (struct tilda_window_ *tw, enum pull_state state)
 
 static void onKeybindingPull (G_GNUC_UNUSED const char *keystring, gpointer user_data)
 {
+	DEBUG_FUNCTION("onKeybindingPull");
 	tilda_window *tw = TILDA_WINDOW(user_data);
-	pull (tw, PULL_TOGGLE);
+	pull (tw, PULL_TOGGLE, FALSE);
 }
 
 gboolean tilda_keygrabber_bind (const gchar *keystr, tilda_window *tw)

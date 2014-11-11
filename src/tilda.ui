@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
 <interface>
-  <!-- interface-requires gtk+ 3.0 -->
+  <requires lib="gtk+" version="3.0"/>
   <object class="GtkAdjustment" id="adjustment1">
     <property name="upper">100</property>
     <property name="step_increment">1</property>
@@ -92,6 +93,23 @@
       </row>
       <row>
         <col id="0" translatable="yes">Right</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Hidden</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkListStore" id="model10">
+    <columns>
+      <!-- column-name gchararray -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">Focus Terminal</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Hide Terminal</col>
       </row>
     </data>
   </object>
@@ -424,9 +442,44 @@
                               <packing>
                                 <property name="left_attach">0</property>
                                 <property name="top_attach">0</property>
-                                <property name="width">1</property>
-                                <property name="height">1</property>
                               </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="lbl_non_focus_pull_up_behaviour">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="xalign">1</property>
+                                <property name="label" translatable="yes">Non-focus Pull Up Behaviour:</property>
+                                <property name="ellipsize">end</property>
+                                <property name="width_chars">0</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkComboBox" id="combo_non_focus_pull_up_behaviour">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="model">model10</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="renderer11"/>
+                                  <attributes>
+                                    <attribute name="text">0</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="top_attach">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                            <child>
+                              <placeholder/>
                             </child>
                           </object>
                         </child>
@@ -1274,24 +1327,40 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="label27">
+                  <object class="GtkScrolledWindow" id="scrolledwindow1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_left">4</property>
                     <property name="margin_right">4</property>
                     <property name="margin_top">4</property>
                     <property name="margin_bottom">4</property>
-                    <property name="hexpand">True</property>
-                    <property name="vexpand">True</property>
-                    <property name="xalign">0</property>
-                    <property name="yalign">0</property>
-                    <property name="label" translatable="yes">* A valid command that can open a browser must be entered here. It is possible to use the name of a specific browser such as 'firefox' and 'google-chrome' or to use the generic commands 'x-www-browser' and 'xdg-open'. The best command may be different depending on the system.</property>
-                    <property name="ellipsize">start</property>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkViewport" id="viewport1">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="shadow_type">none</property>
+                        <child>
+                          <object class="GtkLabel" id="label27">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="margin_left">4</property>
+                            <property name="margin_right">4</property>
+                            <property name="margin_top">4</property>
+                            <property name="margin_bottom">4</property>
+                            <property name="vexpand">True</property>
+                            <property name="xalign">0</property>
+                            <property name="yalign">0</property>
+                            <property name="label" translatable="yes">* A valid command that can open a browser must be entered here. It is possible to use the name of a specific browser such as 'firefox' and 'google-chrome' or to use the generic commands 'x-www-browser' and 'xdg-open'. The best command may be different depending on the system.</property>
+                            <property name="wrap">True</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                   <packing>
                     <property name="top_attach">4</property>
                     <property name="bottom_attach">5</property>
-                    <property name="x_options">GTK_FILL</property>
                   </packing>
                 </child>
               </object>
@@ -2183,7 +2252,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 15</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">6</property>
@@ -2199,7 +2268,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 7</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">6</property>
@@ -2213,7 +2282,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 14</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">5</property>
@@ -2229,7 +2298,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 16</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">7</property>
@@ -2245,7 +2314,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 13</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">4</property>
@@ -2261,7 +2330,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 11</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">2</property>
@@ -2277,7 +2346,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 12</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">3</property>
@@ -2293,7 +2362,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 10</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">1</property>
@@ -2309,7 +2378,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 9</property>
                                       </object>
                                       <packing>
                                         <property name="top_attach">1</property>
@@ -2323,7 +2392,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 8</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">7</property>
@@ -2337,7 +2406,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 6</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">5</property>
@@ -2351,7 +2420,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 5</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">4</property>
@@ -2365,7 +2434,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 4</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">3</property>
@@ -2379,7 +2448,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 3</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">2</property>
@@ -2393,7 +2462,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 2</property>
                                       </object>
                                       <packing>
                                         <property name="left_attach">1</property>
@@ -2407,7 +2476,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">False</property>
-                                        <property name="tooltip_text">dummy</property>
+                                        <property name="tooltip_text">Choose color 1</property>
                                         <property name="color">#000000000000</property>
                                       </object>
                                       <packing>
@@ -2526,57 +2595,6 @@
                             <property name="n_rows">5</property>
                             <property name="n_columns">2</property>
                             <child>
-                              <object class="GtkCheckButton" id="check_scroll_on_output">
-                                <property name="label" translatable="yes">Scroll on Output</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="receives_default">False</property>
-                                <property name="xalign">0</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="right_attach">2</property>
-                                <property name="top_attach">2</property>
-                                <property name="bottom_attach">3</property>
-                                <property name="x_padding">4</property>
-                                <property name="y_padding">4</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkCheckButton" id="check_scroll_on_keystroke">
-                                <property name="label" translatable="yes">Scroll on Keystroke</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="receives_default">False</property>
-                                <property name="xalign">0</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="right_attach">2</property>
-                                <property name="top_attach">3</property>
-                                <property name="bottom_attach">4</property>
-                                <property name="x_padding">4</property>
-                                <property name="y_padding">4</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkCheckButton" id="check_scroll_background">
-                                <property name="label" translatable="yes">Scroll Background</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="receives_default">False</property>
-                                <property name="xalign">0</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="right_attach">2</property>
-                                <property name="top_attach">4</property>
-                                <property name="bottom_attach">5</property>
-                                <property name="x_padding">4</property>
-                                <property name="y_padding">4</property>
-                              </packing>
-                            </child>
-                            <child>
                               <object class="GtkHBox" id="hbox1">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
@@ -2635,20 +2653,6 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="label_scrollback">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">Scrollback:</property>
-                              </object>
-                              <packing>
-                                <property name="top_attach">1</property>
-                                <property name="bottom_attach">2</property>
-                                <property name="x_options">GTK_FILL</property>
-                                <property name="x_padding">4</property>
-                                <property name="y_padding">4</property>
-                              </packing>
-                            </child>
-                            <child>
                               <object class="GtkLabel" id="label_scrollbar_pos">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
@@ -2656,6 +2660,74 @@
                               </object>
                               <packing>
                                 <property name="x_options">GTK_FILL</property>
+                                <property name="x_padding">4</property>
+                                <property name="y_padding">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="check_infinite_scrollback">
+                                <property name="label" translatable="yes">Limit scrollback to:</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="tooltip_text" translatable="yes">Unselect for unlimited scrollback.</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="top_attach">1</property>
+                                <property name="bottom_attach">2</property>
+                                <property name="x_padding">4</property>
+                                <property name="y_padding">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="check_scroll_on_output">
+                                <property name="label" translatable="yes">Scroll on Output</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="receives_default">False</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">2</property>
+                                <property name="bottom_attach">3</property>
+                                <property name="x_padding">4</property>
+                                <property name="y_padding">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="check_scroll_on_keystroke">
+                                <property name="label" translatable="yes">Scroll on Keystroke</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="receives_default">False</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">3</property>
+                                <property name="bottom_attach">4</property>
+                                <property name="x_padding">4</property>
+                                <property name="y_padding">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton" id="check_scroll_background">
+                                <property name="label" translatable="yes">Scroll Background</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="receives_default">False</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">4</property>
+                                <property name="bottom_attach">5</property>
                                 <property name="x_padding">4</property>
                                 <property name="y_padding">4</property>
                               </packing>
@@ -2897,6 +2969,9 @@
                 <property name="can_focus">False</property>
                 <property name="n_rows">11</property>
                 <property name="n_columns">2</property>
+                <child>
+                  <placeholder/>
+                </child>
                 <child>
                   <object class="GtkFrame" id="frame_keybinding_paste">
                     <property name="visible">True</property>
@@ -3673,9 +3748,6 @@
                     <property name="x_padding">4</property>
                     <property name="y_padding">4</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
                 <child>
                   <object class="GtkFrame" id="frame_keybinding_fullscreen">

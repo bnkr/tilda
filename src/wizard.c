@@ -11,20 +11,19 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <tilda-config.h>
 
 #include <errno.h>
 
-#include <debug.h>
-#include <tilda.h>
-#include <wizard.h>
-#include <key_grabber.h>
-#include <configsys.h>
-#include <callback_func.h>
+#include "debug.h"
+#include "tilda.h"
+#include "wizard.h"
+#include "key_grabber.h"
+#include "configsys.h"
+#include "callback_func.h"
 
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
@@ -199,7 +198,7 @@ static TerminalPaletteScheme palette_schemes[] = {
 /* For use in get_display_dimension() */
 enum dimensions { HEIGHT, WIDTH };
 
-/* This will hold the GtkBuilder representation of the .glade file.
+/* This will hold the GtkBuilder representation of the .ui file.
  * We keep this global so that we can look up any element from any routine.
  *
  * Note that for GtkBuilder to autoconnect signals, the functions that it hooks
@@ -232,7 +231,6 @@ gint wizard (tilda_window *ltw)
     DEBUG_ASSERT (ltw != NULL);
 
     gchar *window_title;
-    const gchar *glade_file = g_build_filename (PKGDATADIR, "tilda.glade", NULL);
     GtkWidget *wizard_window;
 
     /* Make sure that there isn't already a wizard showing */
@@ -248,14 +246,13 @@ gint wizard (tilda_window *ltw)
     gtk_builder_set_translation_domain (xml, PACKAGE);
 #endif
 
-    if (!gtk_builder_add_from_file (xml, glade_file, &error)) {
-        g_error ("Couldn't load builder file: %s", error->message);
-        g_error_free (error);
+    if(!gtk_builder_add_from_resource (xml, "/org/tilda/tilda.ui", &error)) {
+        g_prefix_error(&error, "Error:");
         return EXIT_FAILURE;
     }
 
     if (!xml) {
-        g_warning ("problem while loading the tilda.glade file");
+        g_warning ("problem while loading the tilda.ui file");
         return 2;
     }
 
@@ -864,10 +861,31 @@ static void check_allow_bold_text_toggled_cb (GtkWidget *w)
     }
 }
 
+static void combo_non_focus_pull_up_behaviour_cb (GtkWidget *w)
+{
+    const gint status = gtk_combo_box_get_active (GTK_COMBO_BOX(w));
+
+    if (status < 0 || status > 1) {
+        DEBUG_ERROR ("Non-focus pull up behaviour invalid");
+        g_printerr (_("Invalid non-focus pull up behaviour, ignoring\n"));
+        return;
+    }
+
+    if(1 == status) {
+        tw->hide_non_focused = TRUE;
+    }
+    else {
+        tw->hide_non_focused = FALSE;
+    }
+
+    config_setint ("non_focus_pull_up_behaviour", status);
+}
+
 static void combo_tab_pos_changed_cb (GtkWidget *w)
 {
     const gint status = gtk_combo_box_get_active (GTK_COMBO_BOX(w));
-    const gint positions[] = { GTK_POS_TOP,
+    const GtkPositionType positions[] = {
+                             GTK_POS_TOP,
                              GTK_POS_BOTTOM,
                              GTK_POS_LEFT,
                              GTK_POS_RIGHT };
@@ -879,7 +897,16 @@ static void combo_tab_pos_changed_cb (GtkWidget *w)
     }
 
     config_setint ("tab_pos", status);
-    gtk_notebook_set_tab_pos (GTK_NOTEBOOK(tw->notebook), positions[status]);
+
+    if(NB_HIDDEN == status) {
+        gtk_notebook_set_show_tabs (GTK_NOTEBOOK(tw->notebook), FALSE);
+    }
+    else {
+        if (gtk_notebook_get_n_pages(GTK_NOTEBOOK (tw->notebook)) > 1) {
+            gtk_notebook_set_show_tabs(GTK_NOTEBOOK(tw->notebook), TRUE);
+        }
+        gtk_notebook_set_tab_pos (GTK_NOTEBOOK(tw->notebook), positions[status]);
+    }
 }
 
 static void button_font_font_set_cb (GtkWidget *w)
@@ -1650,6 +1677,7 @@ static void combo_scrollbar_position_changed_cb (GtkWidget *w)
 static void spin_scrollback_amount_value_changed_cb (GtkWidget *w)
 {
     const gint status = gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON(w));
+
     guint i;
     tilda_term *tt;
 
@@ -1658,6 +1686,33 @@ static void spin_scrollback_amount_value_changed_cb (GtkWidget *w)
     for (i=0; i<g_list_length (tw->terms); i++) {
         tt = g_list_nth_data (tw->terms, i);
         vte_terminal_set_scrollback_lines (VTE_TERMINAL(tt->vte_term), status);
+    }
+}
+
+static void check_infinite_scrollback_toggled_cb(GtkWidget *w)
+{
+    // if status is false then scrollback is infinite, otherwise the spinner is active
+    const gboolean hasScrollbackLimit = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(w));
+
+    config_setbool ("scroll_history_infinite", hasScrollbackLimit);
+
+    GtkWidget *spinner = (GtkWidget *) gtk_builder_get_object(xml, "spin_scrollback_amount");
+    gint scrollback_lines = gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON(spinner));
+    GtkWidget *label = (GtkWidget *) gtk_builder_get_object(xml, "label_scrollback_lines");
+
+    gtk_widget_set_sensitive(spinner, hasScrollbackLimit);
+    gtk_widget_set_sensitive(label, hasScrollbackLimit);
+
+    guint i;
+    tilda_term *tt;
+
+    if(!hasScrollbackLimit) {
+        scrollback_lines = -1;
+    }
+
+    for (i=0; i<g_list_length (tw->terms); i++) {
+        tt = g_list_nth_data (tw->terms, i);
+        vte_terminal_set_scrollback_lines(VTE_TERMINAL(tt->vte_term), scrollback_lines);
     }
 }
 
@@ -1934,6 +1989,7 @@ static void set_wizard_state_from_config () {
     CHECK_BUTTON ("check_start_tilda_hidden", "hidden");
     CHECK_BUTTON ("check_show_notebook_border", "notebook_border");
     CHECK_BUTTON ("check_enable_double_buffering", "double_buffer");
+    COMBO_BOX ("combo_non_focus_pull_up_behaviour", "non_focus_pull_up_behaviour");
 
     CHECK_BUTTON ("check_terminal_bell", "bell");
     CHECK_BUTTON ("check_cursor_blinks", "blinks");
@@ -2021,6 +2077,9 @@ static void set_wizard_state_from_config () {
     /* Scrolling Tab */
     COMBO_BOX ("combo_scrollbar_position", "scrollbar_pos");
     SPIN_BUTTON ("spin_scrollback_amount", "lines");
+    CHECK_BUTTON ("check_infinite_scrollback", "scroll_history_infinite");
+    SET_SENSITIVE_BY_CONFIG_BOOL ("spin_scrollback_amount", "scroll_history_infinite");
+    SET_SENSITIVE_BY_CONFIG_BOOL ("label_scrollback_lines", "scroll_history_infinite");
     CHECK_BUTTON ("check_scroll_on_output", "scroll_on_output");
     CHECK_BUTTON ("check_scroll_on_keystroke", "scroll_on_key");
     CHECK_BUTTON ("check_scroll_background", "scroll_background");
@@ -2069,6 +2128,7 @@ static void connect_wizard_signals ()
     CONNECT_SIGNAL ("check_always_on_top","toggled",check_always_on_top_toggled_cb);
     CONNECT_SIGNAL ("check_start_tilda_hidden","toggled",check_start_tilda_hidden_toggled_cb);
     CONNECT_SIGNAL ("check_enable_double_buffering","toggled",check_enable_double_buffering_toggled_cb);
+    CONNECT_SIGNAL ("combo_non_focus_pull_up_behaviour","changed",combo_non_focus_pull_up_behaviour_cb);
 
     CONNECT_SIGNAL ("check_terminal_bell","toggled",check_terminal_bell_toggled_cb);
     CONNECT_SIGNAL ("check_cursor_blinks","toggled",check_cursor_blinks_toggled_cb);
@@ -2132,6 +2192,7 @@ static void connect_wizard_signals ()
     /* Scrolling Tab */
     CONNECT_SIGNAL ("combo_scrollbar_position","changed",combo_scrollbar_position_changed_cb);
     CONNECT_SIGNAL ("spin_scrollback_amount","value-changed",spin_scrollback_amount_value_changed_cb);
+    CONNECT_SIGNAL ("check_infinite_scrollback", "toggled", check_infinite_scrollback_toggled_cb);
     CONNECT_SIGNAL ("check_scroll_on_output","toggled",check_scroll_on_output_toggled_cb);
     CONNECT_SIGNAL ("check_scroll_on_keystroke","toggled",check_scroll_on_keystroke_toggled_cb);
     CONNECT_SIGNAL ("check_scroll_background","toggled",check_scroll_background_toggled_cb);
