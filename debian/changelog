@@ -1,3 +1,13 @@
+tilda (1.2.2+bnkr7) experimental; urgency=low
+
+  * More translations.
+  * Unlimited scrollback option.
+  * Many fixes for focus handling.
+  * Fix locking problems on start up.
+  * Option to hide tab bar and border while multiple tabs are open.
+
+ -- James Webber <bunkerprivate@gmail.com>  Tue, 11 Nov 2014 11:18:38 +0000
+
 tilda (1.1.8+bnkr6-1) experimental; urgency=low
 
   * Update Lithuanian translation (gymka)
@@ -20,7 +30,7 @@ tilda (1.1.8+bnkr5-1) experimental; urgency=low
 
 tilda (1.1.8+bnkr4-1) experimental; urgency=low
 
-  * Characeter limit for tab titles.
+  * Character limit for tab titles.
 
  -- James Webber <bunkerprivate@gmail.com>  Mon, 04 Nov 2013 10:58:43 +0000
 
