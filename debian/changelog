@@ -1,3 +1,14 @@
+tilda (1.2.2+bnkr8) experimental; urgency=low
+
+  This patch contains some fixes which isn't in lannox's master yet.
+
+  * tentative fix for the persistent focus and animation errors with auto-hide
+    and xfwm from pull request #116 related to bugs #57 and #106.  (Furkan
+    Mustafa)
+  * fix for tab movement and naming from pull request #105 (Andrew Lin).
+
+ -- James Webber <bunkerprivate@gmail.com>  Sat, 07 Feb 2015 14:50:40 +0000
+
 tilda (1.2.2+bnkr7) experimental; urgency=low
 
   * More translations.
