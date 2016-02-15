@@ -28,6 +28,7 @@
 #include <unistd.h> /* fsync */
 
 #include "configsys.h"
+#include <vte/vte.h>
 
 static cfg_t *tc;
 
@@ -39,12 +40,13 @@ static cfg_opt_t config_opts[] = {
 
     /* strings */
     CFG_STR("tilda_config_version", PACKAGE_VERSION, CFGF_NONE),
-    CFG_STR("image", NULL, CFGF_NONE),
     CFG_STR("command", "", CFGF_NONE),
     CFG_STR("font", "Monospace 11", CFGF_NONE),
     CFG_STR("key", NULL, CFGF_NONE),
     CFG_STR("addtab_key", "<Shift><Control>t", CFGF_NONE),
     CFG_STR("fullscreen_key", "F11", CFGF_NONE),
+    CFG_STR("toggle_transparency_key", "F12", CFGF_NONE),
+    CFG_STR("toggle_searchbar_key", "<Shift><Control>f", CFGF_NONE),
     CFG_STR("closetab_key", "<Shift><Control>w", CFGF_NONE),
     CFG_STR("nexttab_key", "<Control>Page_Down", CFGF_NONE),
     CFG_STR("prevtab_key", "<Control>Page_Up", CFGF_NONE),
@@ -67,15 +69,18 @@ static cfg_opt_t config_opts[] = {
     CFG_STR("background_color", "white", CFGF_NONE),
     CFG_STR("working_dir", NULL, CFGF_NONE),
     CFG_STR("web_browser", "x-www-browser", CFGF_NONE),
+    CFG_STR("increase_font_size_key", "<Control>equal", CFGF_NONE),
+    CFG_STR("decrease_font_size_key", "<Control>minus", CFGF_NONE),
+    CFG_STR("normalize_font_size_key", "<Control>0", CFGF_NONE),
+    CFG_STR("show_on_monitor", "", CFGF_NONE),
     CFG_STR("word_chars", DEFAULT_WORD_CHARS, CFGF_NONE),
 
     /* ints */
-    CFG_INT("lines", 100, CFGF_NONE),
+    CFG_INT("lines", 5000, CFGF_NONE),
     CFG_INT("max_width", 600, CFGF_NONE),
     CFG_INT("max_height", 150, CFGF_NONE),
     CFG_INT("min_width", 1, CFGF_NONE),
     CFG_INT("min_height", 1, CFGF_NONE),
-    CFG_INT("transparency", 0, CFGF_NONE),
     CFG_INT("x_pos", 0, CFGF_NONE),
     CFG_INT("y_pos", 0, CFGF_NONE),
     CFG_INT("tab_pos", 0, CFGF_NONE),
@@ -91,9 +96,12 @@ static cfg_opt_t config_opts[] = {
     CFG_INT("on_last_terminal_exit", 0, CFGF_NONE),
     CFG_INT("palette_scheme", 0, CFGF_NONE),
     CFG_INT("non_focus_pull_up_behaviour", 0, CFGF_NONE),
+    CFG_INT("cursor_shape", 0, CFGF_NONE),
 
-    /* The default monitor number is 0 */
-    CFG_INT("show_on_monitor_number", 0, CFGF_NONE),
+    /* Deprecated tilda options */
+    CFG_INT("show_on_monitor_number", 0, CFGF_NODEFAULT),
+    /* End deprecated tilda options */
+
     /* The length of a tab title */
     CFG_INT("title_max_length", 25, CFGF_NONE),
 
@@ -125,15 +133,16 @@ static cfg_opt_t config_opts[] = {
     CFG_INT("text_red", 0xffff, CFGF_NONE),
     CFG_INT("text_green", 0xffff, CFGF_NONE),
     CFG_INT("text_blue", 0xffff, CFGF_NONE),
+    CFG_INT("cursor_red", 0xffff, CFGF_NONE),
+    CFG_INT("cursor_green", 0xffff, CFGF_NONE),
+    CFG_INT("cursor_blue", 0xffff, CFGF_NONE),
 
     /* booleans */
     CFG_BOOL("scroll_history_infinite", FALSE, CFGF_NONE),
-    CFG_BOOL("scroll_background", TRUE, CFGF_NONE),
     CFG_BOOL("scroll_on_output", FALSE, CFGF_NONE),
     CFG_BOOL("notebook_border", FALSE, CFGF_NONE),
     CFG_BOOL("antialias", TRUE, CFGF_NONE),
     CFG_BOOL("scrollbar", FALSE, CFGF_NONE),
-    CFG_BOOL("use_image", FALSE, CFGF_NONE),
     CFG_BOOL("grab_focus", TRUE, CFGF_NONE),
     CFG_BOOL("above", TRUE, CFGF_NONE),
     CFG_BOOL("notaskbar", TRUE, CFGF_NONE),
@@ -145,6 +154,7 @@ static cfg_opt_t config_opts[] = {
     CFG_BOOL("pinned", TRUE, CFGF_NONE),
     CFG_BOOL("animation", FALSE, CFGF_NONE),
     CFG_BOOL("hidden", FALSE, CFGF_NONE),
+    CFG_BOOL("set_as_desktop", FALSE, CFGF_NONE),
     CFG_BOOL("centered_horizontally", FALSE, CFGF_NONE),
     CFG_BOOL("centered_vertically", FALSE, CFGF_NONE),
     CFG_BOOL("enable_transparency", FALSE, CFGF_NONE),
@@ -155,6 +165,18 @@ static cfg_opt_t config_opts[] = {
     CFG_BOOL("title_max_length_flag", TRUE, CFGF_NONE),
     /* Whether to set a new tab's working dir to the current tab's */
     CFG_BOOL("inherit_working_dir", TRUE, CFGF_NONE),
+    CFG_BOOL("command_login_shell", FALSE, CFGF_NONE),
+    CFG_BOOL("start_fullscreen", FALSE, CFGF_NONE),
+
+    /* Config settings for VTE-2.90 features */
+    CFG_STR("image", NULL, CFGF_NODEFAULT),
+    //Even when CFGF_NODEFAULT flag is passed libconfuse won't let us pass a NULL value to a bool
+    CFG_BOOL("scroll_background", FALSE, CFGF_NODEFAULT),
+    CFG_BOOL("use_image", FALSE, CFGF_NODEFAULT),
+    CFG_INT("transparency", 0, CFGF_NONE),
+#if VTE_MINOR_VERSION >= 40 /* VTE-2.91 */
+    CFG_INT("back_alpha", 0xffff, CFGF_NONE),
+#endif
     CFG_END()
 };
 
@@ -175,42 +197,7 @@ static cfg_opt_t config_opts[] = {
 
 static gboolean compare_config_versions (const gchar *config1, const gchar *config2) G_GNUC_UNUSED;
 
-
-
-/**
- * Start up the configuration system, using the configuration file given
- * to get the current values. If the configuration file given does not exist,
- * go ahead and write out the default config to the file.
- */
-gint config_init (const gchar *config_file)
-{
-	gint ret = 0;
-
-	tc = cfg_init (config_opts, 0);
-
-	if (g_file_test (config_file,
-        G_FILE_TEST_IS_REGULAR))
-    {
-		/* Read in the existing configuration options */
-		ret = cfg_parse (tc, config_file);
-
-		if (ret == CFG_PARSE_ERROR) {
-			DEBUG_ERROR ("Problem parsing config");
-			g_printerr (_("Problem when opening config file\n"));
-			return 1;
-		} else if (ret != CFG_SUCCESS) {
-            DEBUG_ERROR ("Problem parsing config.");
-			g_printerr (_("An unexpected error occured while "
-                "parsing the config file\n"));
-        }
-	}
-
-    #ifndef NO_THREADSAFE
-        g_mutex_init(&mutex);
-    #endif
-
-	return 0;
-}
+void remove_deprecated_config_options(const gchar *const *deprecated_config_options, guint size);
 
 /* Note: set config_file to NULL to just free the
  * data structures, and not write out the state to
@@ -354,7 +341,8 @@ gint config_write (const gchar *config_file)
     gint ret = 0;
     FILE *fp;
 
-    fp = fopen(config_file, "w");
+    char *temp_config_file = g_strdup_printf ("%s.tmp", config_file);
+    fp = fopen(temp_config_file, "w");
 
     if (fp != NULL)
     {
@@ -381,6 +369,10 @@ gint config_write (const gchar *config_file)
             g_printerr (_("Unable to close the config file\n"));
             ret = 3;
         }
+        if (rename(temp_config_file, config_file)) {
+            TILDA_PERROR ();
+            DEBUG_ERROR ("Unable to rename temporary config file to final config file.");
+        }
     }
     else
     {
@@ -392,6 +384,73 @@ gint config_write (const gchar *config_file)
     }
 
     return ret;
+}
+
+/**
+ * Start up the configuration system, using the configuration file given
+ * to get the current values. If the configuration file given does not exist,
+ * go ahead and write out the default config to the file.
+ */
+gint config_init (const gchar *config_file)
+{
+	gint ret = 0;
+
+    // Can we use a more descriptive name than tc?
+	tc = cfg_init (config_opts, 0);
+
+	if (g_file_test (config_file,
+        G_FILE_TEST_IS_REGULAR))
+    {
+		/* Read in the existing configuration options */
+		ret = cfg_parse (tc, config_file);
+
+		if (ret == CFG_PARSE_ERROR) {
+			DEBUG_ERROR ("Problem parsing config");
+            return ret;
+		} else if (ret != CFG_SUCCESS) {
+            DEBUG_ERROR ("Problem parsing config.");
+            return ret;
+        }
+	}
+
+    /* Deprecate old config settings
+     * This is a lame work around until we get a permenant solution to
+     * libconfuse lacking for this functionality
+     */
+    const gchar *deprecated_tilda_config_options[] = {"show_on_monitor_number"};
+    remove_deprecated_config_options(deprecated_tilda_config_options, G_N_ELEMENTS(deprecated_tilda_config_options));
+
+#if VTE_MINOR_VERSION >= 40
+    /* Deprecate old config settings
+     * This is a lame work around until we get a permanent solution to
+     * libconfuse lacking for this functionality
+     */
+    const gchar *deprecated_vte_config_options[] = {"image", "scroll_background", "use_image"};
+    remove_deprecated_config_options (deprecated_vte_config_options, G_N_ELEMENTS(deprecated_vte_config_options));
+#else
+    if (cfg_getopt(tc, "use_image")->nvalues < 1) {
+        cfg_setbool(tc, "use_image", FALSE);
+    }
+    if (cfg_getopt(tc, "scroll_background")->nvalues < 1) {
+        cfg_setbool(tc, "scroll_background", TRUE);
+    }
+#endif
+    #ifndef NO_THREADSAFE
+        g_mutex_init(&mutex);
+    #endif
+
+	return ret;
+}
+
+void remove_deprecated_config_options(const gchar *const *deprecated_config_options, guint size) {
+    cfg_opt_t *opt;
+    for (guint i =0; i < size; i++) {
+        opt = cfg_getopt(tc, deprecated_config_options[i]);
+        if (opt->nvalues != 0) {
+            g_warning("Warning: %s is no longer a valid config option for the current version of Tilda.\n", deprecated_config_options[i]);
+            cfg_free_value(opt);
+        }
+    }
 }
 
 /*

@@ -15,6 +15,27 @@
 #define _POSIX_SOURCE /* feature test macro for signal functions */
 #define _XOPEN_SOURCE /* feature test macro for popen */
 
+/*
+ * This message is shown in a modal dialog when tilda starts and there is a problem parsing the configuration file.
+ * Such problems can occur for example if the config file contains a key-value pair that is unknown to tilda. This
+ * can be the case if the user manually modified the configuration file or if a newer version of tilda was run and
+ * which saved some settings that are not known by older versions of tilda.
+ */
+#define TILDA_CONFIG_PARSE_ERROR \
+    "<b>A problem occurred while parsing the config file.</b>\n\n" \
+    "This can happen if the tilda config contains a setting that is unknown to tilda. " \
+    "Tilda will now start with the default configuration."
+
+/*
+ * This message is shown in a modal dialog when tilda starts and there is a any other problem with the configuration
+ * file except a parse error.
+ */
+#define TILDA_CONFIG_OTHER_ERROR \
+    "<b>An unexpected error occured while parsing the config file.</b>\n\n" \
+    "The default configuration will be used instead. This error can occur if the configuration file is corrupted" \
+    "or otherwise unreadable. Tilda will now start with a default configuration."
+
+
 #include <tilda-config.h>
 
 #include "debug.h"
@@ -300,11 +321,16 @@ static gboolean parse_cli (int argc, char *argv[])
     gchar *background_color = config_getstr ("background_color");
     gchar *command = config_getstr ("command");
     gchar *font = config_getstr ("font");
-    gchar *image = config_getstr ("image");
     gchar *working_dir = config_getstr ("working_dir");
 
-    gint lines = config_getint ("lines");
+#ifdef VTE_290
+    gchar *image = config_getstr ("image");
     gint transparency = config_getint ("transparency");
+#else
+    gint back_alpha = config_getint ("back_alpha");
+#endif
+
+    gint lines = config_getint ("lines");
     gint x_pos = config_getint ("x_pos");
     gint y_pos = config_getint ("y_pos");
 
@@ -323,12 +349,16 @@ static gboolean parse_cli (int argc, char *argv[])
         { "font",               'f', 0, G_OPTION_ARG_STRING,    &font,              N_("Set the font to the following string"), NULL },
         { "lines",              'l', 0, G_OPTION_ARG_INT,       &lines,             N_("Scrollback Lines"), NULL },
         { "scrollbar",          's', 0, G_OPTION_ARG_NONE,      &scrollbar,         N_("Use Scrollbar"), NULL },
-        { "transparency",       't', 0, G_OPTION_ARG_INT,       &transparency,      N_("Opaqueness: 0-100%"), NULL },
         { "version",            'v', 0, G_OPTION_ARG_NONE,      &version,           N_("Print the version, then exit"), NULL },
         { "working-dir",        'w', 0, G_OPTION_ARG_STRING,    &working_dir,       N_("Set Initial Working Directory"), NULL },
         { "x-pos",              'x', 0, G_OPTION_ARG_INT,       &x_pos,             N_("X Position"), NULL },
         { "y-pos",              'y', 0, G_OPTION_ARG_INT,       &y_pos,             N_("Y Position"), NULL },
+#ifdef VTE_290
         { "image",              'B', 0, G_OPTION_ARG_STRING,    &image,             N_("Set Background Image"), NULL },
+        { "transparency",       't', 0, G_OPTION_ARG_INT,       &transparency,      N_("Opaqueness: 0-100%"), NULL },
+#else
+        { "background-alpha",   't', 0, G_OPTION_ARG_INT,       &back_alpha,        N_("Opaqueness: 0-100%"), NULL },
+#endif
         { "config",             'C', 0, G_OPTION_ARG_NONE,      &show_config,       N_("Show Configuration Wizard"), NULL },
         { NULL }
     };
@@ -338,7 +368,6 @@ static gboolean parse_cli (int argc, char *argv[])
     GError *error = NULL;
     GOptionContext *context = g_option_context_new (NULL);
     g_option_context_add_main_entries (context, cl_opts, NULL);
-    g_option_context_add_group (context, gtk_get_option_group (TRUE));
     g_option_context_parse (context, &argc, &argv, &error);
     g_option_context_free (context);
 
@@ -370,6 +399,25 @@ static gboolean parse_cli (int argc, char *argv[])
         exit (EXIT_SUCCESS);
     }
 
+    /* This block is only used to initialize the Glib and GTK internal options. That way the users can pass additional command line options,
+     * that are used by Glib and GTK. We do this separate from the above options, because we pass TRUE to the gtk_get_option group function
+     * which causes GTK to initialize the default display. This way it is possible to invoke `tilda --version` without getting an
+     * error if there is no display available.
+     */
+    error = NULL;
+    context = g_option_context_new (NULL);
+    g_option_context_add_group (context, gtk_get_option_group (TRUE));
+    g_option_context_parse (context, &argc, &argv, &error);
+    g_option_context_free (context);
+
+    if (error)
+    {
+        g_printerr (_("Error parsing Glib and GTK specific command-line options. Try \"tilda --help-all\"\nto see all possible options.\n\nError message: %s\n"),
+                    error->message);
+
+        exit (EXIT_FAILURE);
+    }
+
     /* Now set the options in the config, if they changed */
     if (background_color != config_getstr ("background_color")) {
         config_setstr ("background_color", background_color);
@@ -393,10 +441,23 @@ static gboolean parse_cli (int argc, char *argv[])
         config_setstr ("font", font);
         g_free(font);
     }
+#ifdef VTE_290
     if (image != config_getstr ("image")) {
         config_setstr ("image", image);
         g_free(image);
     }
+    if (transparency != config_getint ("transparency"))
+    {
+        config_setbool ("enable_transparency", transparency);
+        config_setint ("transparency", transparency);
+    }
+#else
+    if (back_alpha != config_getint ("back_alpha"))
+    {
+        config_setbool ("enable_transparency", ~back_alpha & 0xffff);
+        config_setint ("back_alpha", back_alpha);
+    }
+#endif
     if (working_dir != config_getstr ("working_dir")) {
         config_setstr ("working_dir", working_dir);
         g_free(working_dir);
@@ -404,11 +465,7 @@ static gboolean parse_cli (int argc, char *argv[])
 
     if (lines != config_getint ("lines"))
         config_setint ("lines", lines);
-    if (transparency != config_getint ("transparency"))
-    {
-        config_setbool ("enable_transparency", transparency);
-        config_setint ("transparency", transparency);
-    }
+
     if (x_pos != config_getint ("x_pos"))
         config_setint ("x_pos", x_pos);
     if (y_pos != config_getint ("y_pos"))
@@ -552,31 +609,70 @@ static void migrate_config_files(char *old_config_path) {
     g_free(new_config_dir);
 }
 
+static void load_application_css () {
+    GtkCssProvider *provider;
+    const gchar* style;
+    GError *error;
+
+    provider = gtk_css_provider_new ();
+
+    gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
+                                               GTK_STYLE_PROVIDER (provider),
+                                               GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+    style = "#search{background:#fff;}";
+    error = NULL;
+    gtk_css_provider_load_from_data (provider, style, -1, &error);
+
+    if (error) {
+        g_print ("Error %s\n", error->message);
+        g_error_free (error);
+    }
+}
+
 static void load_custom_css_file () {
     GtkCssProvider *provider;
-    char* cssfilename = g_build_filename(
-        g_get_user_config_dir (), "tilda", "style.css", NULL);
-    if (g_file_test (cssfilename, G_FILE_TEST_EXISTS)) {
-        g_print (_("Found style.css in the user config directory, "
-            "applying user css style.\n"));
-        provider = gtk_css_provider_new ();
-        gtk_style_context_add_provider_for_screen (
-            gdk_screen_get_default(),
-            GTK_STYLE_PROVIDER(provider),
-            GTK_STYLE_PROVIDER_PRIORITY_USER
-        );
-        GFile *cssfile = g_file_new_for_path (cssfilename);
-        gtk_css_provider_load_from_file (GTK_CSS_PROVIDER (provider),
-            cssfile, NULL);
-        g_object_unref (cssfile);
+    GFile *file;
+    GError *error;
+    gchar *filename;
+
+    filename = g_build_filename (g_get_user_config_dir (),
+                                 "tilda", "style.css", NULL);
+
+    if (!g_file_test (filename, G_FILE_TEST_EXISTS))
+        return;
+
+    g_print (_("Found style.css in the user config directory, "
+               "applying user css style.\n"));
+
+    provider = gtk_css_provider_new ();
+
+    gtk_style_context_add_provider_for_screen (gdk_screen_get_default(),
+                                               GTK_STYLE_PROVIDER(provider),
+                                               GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+
+    file = g_file_new_for_path (filename);
+    error = NULL;
+    gtk_css_provider_load_from_file (provider, file, &error);
+
+    if (error) {
+        g_print ("Error: %s", error->message);
+        g_error_free (error);
     }
+
+    g_object_unref (file);
+    g_free (filename);
 }
 
 int main (int argc, char *argv[])
 {
-    DEBUG_FUNCTION ("main");
+    DEBUG_FUNCTION_MESSAGE ("main", "Using libvte version: %i.%i.%i\n",
+                            VTE_MAJOR_VERSION, VTE_MINOR_VERSION, VTE_MICRO_VERSION);
 
     tilda_window tw;
+    /* NULL set the tw pointers so we can get a clean exit on initialization failure */
+    memset(&tw, 0, sizeof(tilda_window));
 
     struct sigaction sa;
     struct lock_info lock;
@@ -651,7 +747,7 @@ int main (int argc, char *argv[])
             g_mem_set_vtable (glib_mem_profiler_table);
 #endif
     /* Start up the configuration system */
-    config_init (config_file);
+    gint config_init_result = config_init (config_file);
 
     /* Parse the command line */
     need_wizard = parse_cli (argc, argv);
@@ -659,15 +755,36 @@ int main (int argc, char *argv[])
     /* We're about to startup X, so set the error handler. */
     XSetErrorHandler (xerror_handler);
 
-    /* Initialize GTK and libglade */
+    /* Initialize GTK. Any code that interacts with GTK (e.g. creating a widget) should come after this call. */
     gtk_init (&argc, &argv);
 
+    /* This section shows a modal dialog to notify the user that something has gone wrong when loading the config.
+     * Earlier version only used to print a message to stderr, but since tilda is usually not started from a
+     * console this message would have been lost and a message dialog is much more user friedly.
+     */
+    GtkWidget *dialog = NULL;
+    if(config_init_result == 1) {
+        dialog = gtk_message_dialog_new_with_markup(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
+                                        TILDA_CONFIG_PARSE_ERROR);
+    } else if (config_init_result != 0) {
+        dialog = gtk_message_dialog_new_with_markup(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
+                                        TILDA_CONFIG_OTHER_ERROR);
+    }
+
+    if(dialog) {
+        g_message("Running Dialog");
+        gtk_dialog_run(GTK_DIALOG(dialog));
+        gtk_widget_destroy(dialog);
+    }
+
+    load_application_css ();
     load_custom_css_file ();
 
     /* create new tilda_window */
     gboolean success = tilda_window_init (config_file, lock.instance, &tw);
 
     if(!success) {
+        fprintf(stderr, "tilda.c: initialization failed\n");
         goto initialization_failed;
     }
 
@@ -732,7 +849,6 @@ initialization_failed:
     close(lock.file_descriptor);
     g_free (lock_file);
     g_free (config_file);
-
     return 0;
 }
 

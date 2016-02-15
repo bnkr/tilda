@@ -24,14 +24,32 @@
 
 G_BEGIN_DECLS
 
+enum pull_action {
+    PULL_UP,
+    PULL_DOWN,
+    PULL_TOGGLE
+};
+
 typedef struct tilda_window_ tilda_window;
+typedef struct tilda_search_ tilda_search;
+
+enum tilda_animation_state {
+    STATE_UP,
+    STATE_DOWN,
+    STATE_GOING_UP,
+    STATE_GOING_DOWN
+};
 
 struct tilda_window_
 {
     GtkWidget *window;
     GtkWidget *notebook;
+
     GList *terms;
     GtkAccelGroup * accel_group;
+    GActionGroup  *action_group;
+    GtkBuilder *gtk_builder;
+    GtkWidget *wizard_window; /* GtkDialog that contains the wizard */
 
     gchar *lock_file;
     gchar *config_file;
@@ -42,7 +60,7 @@ struct tilda_window_
     /* Temporarily disable auto hiding */
     gboolean disable_auto_hide;
     /* Auto hide tick-function handler */
-    gint auto_hide_tick_handler;
+    guint auto_hide_tick_handler;
     /* Auto hide current time */
     guint32 auto_hide_current_time;
     /* Auto hide max time */
@@ -60,8 +78,30 @@ struct tilda_window_
 	gboolean fullscreen;
 
     /* This field MUST be set before calling pull()! */
-    enum tilda_positions { UP, DOWN } current_state;
+    enum tilda_animation_state current_state;
+
     gboolean focus_loss_on_keypress;
+
+    gint unscaled_font_size;
+    gdouble current_scale_factor;
+
+    tilda_search *search;
+
+    enum pull_action last_action;
+    gint64 last_action_time;
+};
+
+struct tilda_search_
+{
+    GtkWidget *search_box;
+    GtkWidget *entry_search;
+    GtkWidget *button_next;
+    GtkWidget *button_prev;
+    GtkWidget *check_match_case;
+    GtkWidget *check_regex;
+    GtkWidget *label_search_end;
+    /* Stores the result of the last search, if FALSE the last search did not find a match. */
+    gboolean is_search_result;
 };
 
 enum notebook_tab_positions { NB_TOP, NB_BOTTOM, NB_LEFT, NB_RIGHT, NB_HIDDEN };
@@ -143,15 +183,30 @@ gint tilda_window_set_tab_position (tilda_window *tw, enum notebook_tab_position
  */
 void tilda_window_close_current_tab (tilda_window *tw);
 
+/* This should be called by the wizard for each key that has changed. */
+gboolean tilda_window_update_keyboard_accelerators (const gchar* path, const gchar* value);
+
 /**
- * This registers the keyboard shortcuts to the values which the user has
- * configured. It is automatically called when the window is initialized,
- * but it must be called by the wizard after the user has changed one
- * of the shortcuts, in order to registered the new shortcut.
+ * Toggles transparency on all terms
  */
-gint tilda_window_setup_keyboard_accelerators (tilda_window *tw);
+void tilda_window_toggle_transparency(tilda_window *tw);
+
+/**
+ * Toggles the search bar of the tilda window.
+ */
+gint tilda_window_toggle_searchbar (tilda_window *tw);
 
 #define TILDA_WINDOW(data) ((tilda_window *)(data))
+
+/* Allow scales a bit smaller and a bit larger than the usual pango ranges */
+#define TERMINAL_SCALE_XXX_SMALL   (PANGO_SCALE_XX_SMALL/1.2)
+#define TERMINAL_SCALE_XXXX_SMALL  (TERMINAL_SCALE_XXX_SMALL/1.2)
+#define TERMINAL_SCALE_XXXXX_SMALL (TERMINAL_SCALE_XXXX_SMALL/1.2)
+#define TERMINAL_SCALE_XXX_LARGE   (PANGO_SCALE_XX_LARGE*1.2)
+#define TERMINAL_SCALE_XXXX_LARGE  (TERMINAL_SCALE_XXX_LARGE*1.2)
+#define TERMINAL_SCALE_XXXXX_LARGE (TERMINAL_SCALE_XXXX_LARGE*1.2)
+#define TERMINAL_SCALE_MINIMUM     (TERMINAL_SCALE_XXXXX_SMALL/1.2)
+#define TERMINAL_SCALE_MAXIMUM     (TERMINAL_SCALE_XXXXX_LARGE*1.2)
 
 G_END_DECLS
 

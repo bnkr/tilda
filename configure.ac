@@ -3,7 +3,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([Tilda],[1.2.2],[https://github.com/lanoxx/tilda/issues],[tilda],[https://github.com/lanoxx/tilda])
+AC_INIT([Tilda],[1.4~alpha],[https://github.com/lanoxx/tilda/issues],[tilda],[https://github.com/lanoxx/tilda])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 # We are going to use silent builds which have a much
@@ -52,6 +52,7 @@ if test "x$enable_maintainer_flags" = "xyes"; then
             -Werror=format-nonliteral \
             -Werror=init-self \
             -Werror=vla \
+            -Wno-unused-parameter \
             -DDEBUG \
            "
 fi
@@ -111,6 +112,21 @@ if test "x$enable_lto" = "xyes"; then
     LDFLAGS="$LDFLAGS $CFLAGS -fuse-linker-plugin"
 fi
 
+AC_ARG_ENABLE([vte-2.91],
+		[AS_HELP_STRING([--enable-vte-2.91],
+						[compile with libvte2.91 [default=yes]])],
+		[enable_vte_291=$enableval],
+		[enable_vte_291=yes])
+        
+if test "x$enable_vte_291" = "xyes"; then
+    vte_package="vte-2.91"
+    AC_DEFINE([VTE_291], [1], [VTE Version])
+else
+    vte_package="vte-2.90"
+    AC_DEFINE([VTE_290], [1], [VTE Version])
+fi
+
+AM_CONDITIONAL([VTE_290], [test "x$enable_vte_291" = "xno"])
 
 AC_PATH_PROG(GLIB_COMPILE_RESOURCES, glib-compile-resources, no)
 if test x$GLIB_COMPILE_RESOURCES = xno; then
@@ -131,7 +147,7 @@ AM_GNU_GETTEXT([external])
 # Checks for libraries.
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([GTK], [gtk+-3.0 >= 3.0.0])
-PKG_CHECK_MODULES([VTE], [vte-2.90])
+PKG_CHECK_MODULES([VTE], [$vte_package]) 
 PKG_CHECK_MODULES([LIBCONFUSE], [libconfuse])
 PKG_CHECK_MODULES([X11], [x11])
 
@@ -184,5 +200,6 @@ echo "
         compiler:                      ${CC}
         cflags:                        ${cflaglines}
         Maintainer mode:               ${USE_MAINTAINER_MODE}
+        VTE:                           ${vte_package}
         Use *_DISABLE_DEPRECATED:      ${enable_deprecation_flags}
 "

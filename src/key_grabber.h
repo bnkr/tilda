@@ -20,8 +20,7 @@
 
 G_BEGIN_DECLS
 
-enum pull_state { PULL_UP, PULL_DOWN, PULL_TOGGLE };
-void pull (struct tilda_window_ *tw, enum pull_state state, gboolean force_hide);
+void pull (struct tilda_window_ *tw, enum pull_action action, gboolean force_hide);
 
 extern void generate_animation_positions (tilda_window *tw);
 

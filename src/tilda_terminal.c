@@ -38,9 +38,15 @@ GdkRGBA current_palette[TERMINAL_PALETTE_SIZE];
 
 static gint start_shell (struct tilda_term_ *tt, gboolean ignore_custom_command, const char* working_dir);
 static gint tilda_term_config_defaults (tilda_term *tt);
-static void child_exited_cb (GtkWidget *widget, gpointer data);
+
+#ifdef VTE_290
+    static void child_exited_cb (GtkWidget *widget, gpointer data);
+#else
+    static void eof_cb (GtkWidget *widget, gpointer data);
+    /* VTE 2.91 introduced a new status argument to the "child-exited" signal */
+    static void child_exited_cb (GtkWidget *widget, gint status, gpointer data);
+#endif
 static void window_title_changed_cb (GtkWidget *widget, gpointer data);
-static void status_line_changed_cb (GtkWidget *widget, gpointer data);
 static int button_press_cb (GtkWidget *widget, GdkEventButton *event, gpointer data);
 static gboolean key_press_cb (GtkWidget *widget, GdkEvent  *event, tilda_term *terminal);
 static void iconify_window_cb (GtkWidget *widget, gpointer data);
@@ -51,9 +57,9 @@ static void maximize_window_cb (GtkWidget *widget, gpointer data);
 static void restore_window_cb (GtkWidget *widget, gpointer data);
 static void refresh_window_cb (GtkWidget *widget, gpointer data);
 static void move_window_cb (GtkWidget *widget, guint x, guint y, gpointer data);
-static void increase_font_size_cb (GtkWidget *widget, gpointer data);
-static void decrease_font_size_cb (GtkWidget *widget, gpointer data);
-
+#ifdef VTE_290
+static void status_line_changed_cb (GtkWidget *widget, gpointer data);
+#endif
 
 gint tilda_term_free (struct tilda_term_ *term)
 {
@@ -65,7 +71,23 @@ gint tilda_term_free (struct tilda_term_ *term)
     return 0;
 }
 
-
+static void tilda_terminal_switch_page_cb (GtkNotebook *notebook,
+                                           GtkWidget   *page,
+                                           guint        page_num,
+                                           tilda_window *tw)
+{
+    DEBUG_FUNCTION ("tilda_terminal_switch_page_cb");
+    guint counter = 0;
+    tilda_term *term = NULL;
+    for(GList *item=tw->terms; item != NULL; item=item->next) {
+        if(counter == page_num) {
+            term = (tilda_term*) item->data;
+        }
+        counter++;
+    }
+    const char* current_title = vte_terminal_get_window_title (VTE_TERMINAL (term->vte_term));
+    gtk_window_set_title (GTK_WINDOW (tw->window), current_title);
+}
 
 struct tilda_term_ *tilda_term_init (struct tilda_window_ *tw)
 {
@@ -80,6 +102,9 @@ struct tilda_term_ *tilda_term_init (struct tilda_window_ *tw)
     char *current_tt_dir = NULL;
 
     term = g_malloc (sizeof (struct tilda_term_));
+
+    /* Add to GList list of tilda_term structures in tilda_window structure */
+    tw->terms = g_list_append (tw->terms, term);
 
     /* Check for a failed allocation */
     if (!term)
@@ -101,11 +126,16 @@ struct tilda_term_ *tilda_term_init (struct tilda_window_ *tw)
     term->scrollbar = gtk_scrollbar_new (GTK_ORIENTATION_VERTICAL,
         gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (VTE_TERMINAL(term->vte_term))));
 
+    gtk_widget_set_no_show_all (term->scrollbar, TRUE);
+
     /* Initialize to false, we have not yet dropped to the default shell */
     term->dropped_to_default_shell = FALSE;
 
     /* Set properties of the terminal */
     tilda_term_config_defaults (term);
+
+    /* Update the font scale because the newly created terminal uses the default font size */
+    tilda_term_adjust_font_scale(term, tw->current_scale_factor);
 
     /* Pack everything into the hbox */
     gtk_box_pack_end (GTK_BOX(term->hbox), term->scrollbar, FALSE, FALSE, 0);
@@ -120,10 +150,15 @@ struct tilda_term_ *tilda_term_init (struct tilda_window_ *tw)
                       G_CALLBACK(child_exited_cb), term);
     g_signal_connect (G_OBJECT(term->vte_term), "window-title-changed",
                       G_CALLBACK(window_title_changed_cb), term);
+#ifdef VTE_290
     g_signal_connect (G_OBJECT(term->vte_term), "eof",
                       G_CALLBACK(child_exited_cb), term);
     g_signal_connect (G_OBJECT(term->vte_term), "status-line-changed",
                       G_CALLBACK(status_line_changed_cb), term);
+#else
+    g_signal_connect (G_OBJECT(term->vte_term), "eof",
+                      G_CALLBACK(eof_cb), term);
+#endif
     g_signal_connect (G_OBJECT(term->vte_term), "button-press-event",
                       G_CALLBACK(button_press_cb), term);
     g_signal_connect (G_OBJECT(term->vte_term), "key-press-event",
@@ -146,15 +181,10 @@ struct tilda_term_ *tilda_term_init (struct tilda_window_ *tw)
                       G_CALLBACK(refresh_window_cb), tw->window);
     g_signal_connect (G_OBJECT(term->vte_term), "move-window",
                       G_CALLBACK(move_window_cb), tw->window);
-
-    /* Connect to font tweakage. */
-    g_signal_connect (G_OBJECT(term->vte_term), "increase-font-size",
-                      G_CALLBACK(increase_font_size_cb), tw->window);
-    g_signal_connect (G_OBJECT(term->vte_term), "decrease-font-size",
-                      G_CALLBACK(decrease_font_size_cb), tw->window);
+    g_signal_connect (G_OBJECT (tw->notebook), "switch-page",
+                      G_CALLBACK (tilda_terminal_switch_page_cb), tw);
 
     /* Match URL's, etc */
-
     term->http_regexp=g_regex_new(HTTP_REGEXP, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, &error);
     ret = vte_terminal_match_add_gregex(VTE_TERMINAL(term->vte_term), term->http_regexp,0);
     vte_terminal_match_set_cursor_type (VTE_TERMINAL(term->vte_term), ret, GDK_HAND2);
@@ -213,21 +243,37 @@ static void window_title_changed_cb (GtkWidget *widget, gpointer data)
     GtkWidget *label;
 
     label = gtk_notebook_get_tab_label (GTK_NOTEBOOK (tt->tw->notebook), tt->hbox);
+    /* We need to check if the widget that received the title change is the currently
+     * active tab. If not we should not update the window title. */
+    gint page = gtk_notebook_get_current_page (GTK_NOTEBOOK (tt->tw->notebook));
+    tilda_term *currente_term;
+    gboolean active = FALSE;
+    if (page > 0) {
+        currente_term = g_list_nth_data (tt->tw->terms, (guint) page);
+        active = widget == currente_term->vte_term;
+    }
 
-    guint length = config_getint ("title_max_length");
+    guint length = (guint) config_getint ("title_max_length");
 
     if(config_getbool("title_max_length_flag") && strlen(title) > length) {
         gchar *titleOffset = title + strlen(title) - length;
         gchar *shortTitle = g_strdup_printf ("...%s", titleOffset);
         gtk_label_set_text (GTK_LABEL(label), shortTitle);
+        if (active) {
+            gtk_window_set_title (GTK_WINDOW (tt->tw->window), shortTitle);
+        }
         g_free(shortTitle);
     } else {
         gtk_label_set_text (GTK_LABEL(label), title);
+        if (active) {
+            gtk_window_set_title (GTK_WINDOW (tt->tw->window), title);
+        }
     }
 
     g_free (title);
 }
 
+#ifdef VTE_290
 static void status_line_changed_cb (GtkWidget *widget, G_GNUC_UNUSED gpointer data)
 {
     DEBUG_FUNCTION ("status_line_changed_cb");
@@ -235,6 +281,7 @@ static void status_line_changed_cb (GtkWidget *widget, G_GNUC_UNUSED gpointer da
 
     g_print ("Status = `%s'.\n", vte_terminal_get_status_line (VTE_TERMINAL(widget)));
 }
+#endif
 
 static void iconify_window_cb (G_GNUC_UNUSED GtkWidget *widget, gpointer data)
 {
@@ -326,59 +373,18 @@ static void move_window_cb (G_GNUC_UNUSED GtkWidget *widgets, guint x, guint y, 
             gdk_window_move (gtk_widget_get_window (GTK_WIDGET (data)), x, y);
 }
 
-static void adjust_font_size (GtkWidget *widget, gpointer data, gint howmuch)
-{
-    DEBUG_FUNCTION ("adjust_font_size");
-    DEBUG_ASSERT (widget != NULL);
-    DEBUG_ASSERT (data != NULL);
+void tilda_term_adjust_font_scale(tilda_term *term, gdouble scale) {
+    DEBUG_FUNCTION ("tilda_term_adjust_font_scale");
 
-    VteTerminal *terminal;
+    VteTerminal *terminal = VTE_TERMINAL(term->vte_term);
+    /* We need the tilda_term object to access the unscaled
+     * font size and current scale factor */
     PangoFontDescription *desired;
-    gint newsize;
-    gint columns, rows, owidth, oheight;
 
-    /* Read the screen dimensions in cells. */
-    terminal = VTE_TERMINAL(widget);
-    columns = vte_terminal_get_column_count (terminal);
-    rows = vte_terminal_get_row_count (terminal);
-
-    /* Take into account padding and border overhead. */
-    gtk_window_get_size(GTK_WINDOW(data), &owidth, &oheight);
-    owidth -= vte_terminal_get_char_width (terminal) * columns;
-    oheight -= vte_terminal_get_char_height (terminal) * rows;
-
-    /* Calculate the new font size. */
     desired = pango_font_description_copy (vte_terminal_get_font(terminal));
-    newsize = pango_font_description_get_size (desired) / PANGO_SCALE;
-    newsize += howmuch;
-    pango_font_description_set_size (desired, CLAMP(newsize, 4, 144) * PANGO_SCALE);
-
-    /* Change the font, then resize the window so that we have the same
-     * number of rows and columns. */
+    pango_font_description_set_size (desired, (gint) (term->tw->unscaled_font_size * scale));
     vte_terminal_set_font (terminal, desired);
-    /*gtk_window_resize (GTK_WINDOW(data),
-              columns * terminal->char_width + owidth,
-              rows * terminal->char_height + oheight);*/
-
     pango_font_description_free (desired);
-}
-
-static void increase_font_size_cb (GtkWidget *widget, gpointer data)
-{
-    DEBUG_FUNCTION ("increase_font_size");
-    DEBUG_ASSERT (widget != NULL);
-    DEBUG_ASSERT (data != NULL);
-
-    adjust_font_size (widget, data, 1);
-}
-
-static void decrease_font_size_cb (GtkWidget *widget, gpointer data)
-{
-    DEBUG_FUNCTION ("decrease_font_size");
-    DEBUG_ASSERT (widget != NULL);
-    DEBUG_ASSERT (data != NULL);
-
-    adjust_font_size (widget, data, -1);
 }
 
 /* Returns the working directory of the terminal
@@ -387,7 +393,7 @@ static void decrease_font_size_cb (GtkWidget *widget, gpointer data)
  *
  * SUCCESS: return non-NULL char* that should be freed with g_free when done
  * FAILURE: return NULL
-*/
+ */
 char* tilda_term_get_cwd(struct tilda_term_* tt)
 {
     char *file;
@@ -453,7 +459,7 @@ static gint start_shell (struct tilda_term_ *tt, gboolean ignore_custom_command,
         char **envv = malloc(2*sizeof(void *));
         envv[0] = getenv("PATH");
         envv[1] = NULL;
-
+#ifdef VTE_290
         ret = vte_terminal_fork_command_full (VTE_TERMINAL (tt->vte_term),
             VTE_PTY_DEFAULT, /* VtePtyFlags pty_flags */
             working_dir, /* const char *working_directory */
@@ -465,12 +471,25 @@ static gint start_shell (struct tilda_term_ *tt, gboolean ignore_custom_command,
             &tt->pid, /* GPid *child_pid */
             NULL  /* GError **error */
             );
-
+#else
+        ret = vte_terminal_spawn_sync (VTE_TERMINAL (tt->vte_term),
+            VTE_PTY_DEFAULT, /* VtePtyFlags pty_flags */
+            working_dir, /* const char *working_directory */
+            argv, /* char **argv */
+            envv, /* char **envv */
+            G_SPAWN_SEARCH_PATH,    /* GSpawnFlags spawn_flags */
+            NULL, /* GSpawnChildSetupFunc child_setup */
+            NULL, /* gpointer child_setup_data */
+            &tt->pid, /* GPid *child_pid */
+            NULL, /* GCancellable * cancellable, */
+            NULL  /* GError **error */
+            );
+#endif
         g_strfreev (argv);
         g_free (envv);
 
         /* Check for error */
-        if (ret == -1)
+        if (ret == FALSE)
         {
             g_printerr (_("Unable to launch custom command: %s\n"), config_getstr ("command"));
             g_printerr (_("Launching default shell instead\n"));
@@ -507,22 +526,51 @@ launch_default_shell:
     /* We need to create a NULL terminated list of arguments.
      * The first item is the command to execute in the shell, in this
      * case there are no further arguments being passed. */
-    argv = malloc(2 * sizeof(void *));
-    argv[0] = default_command;
-    argv[1] = NULL;
-
+    GSpawnFlags flags = 0;
+    gchar* argv1 = NULL;
+    if(config_getbool("command_login_shell")) {
+        argv1 = g_strdup_printf("-%s", default_command);
+        argv = malloc(3 * sizeof(void *));
+        argv[0] = default_command;
+        argv[1] = argv1;
+        argv[2] = NULL;
+        /* This is needed so that argv[1] becomes the argv[0] of the new process. Otherwise
+         * glib just duplicates argv[0] when it executes the command and it is not possible
+         * to modify the argv[0] that the new command sees.
+         */
+        flags |= G_SPAWN_FILE_AND_ARGV_ZERO;
+    } else {
+        argv = malloc(1 * sizeof(void *));
+        argv[0] = default_command;
+        argv[1] = NULL;
+    }
+#ifdef VTE_290
     ret = vte_terminal_fork_command_full (VTE_TERMINAL (tt->vte_term),
         VTE_PTY_DEFAULT, /* VtePtyFlags pty_flags */
         working_dir, /* const char *working_directory */
         argv, /* char **argv */
         NULL, /* char **envv */
-        0,    /* GSpawnFlags spawn_flags */
+        flags,    /* GSpawnFlags spawn_flags */
         NULL, /* GSpawnChildSetupFunc child_setup */
         NULL, /* gpointer child_setup_data */
         &tt->pid, /* GPid *child_pid */
         NULL  /* GError **error */
         );
-
+#else
+    ret = vte_terminal_spawn_sync (VTE_TERMINAL (tt->vte_term),
+        VTE_PTY_DEFAULT, /* VtePtyFlags pty_flags */
+        working_dir, /* const char *working_directory */
+        argv, /* char **argv */
+        NULL, /* char **envv */
+        flags,    /* GSpawnFlags spawn_flags */
+        NULL, /* GSpawnChildSetupFunc child_setup */
+        NULL, /* gpointer child_setup_data */
+        &tt->pid, /* GPid *child_pid */
+        NULL, /* GCancellable *cancellable */
+        NULL  /* GError **error */
+        );
+#endif
+    g_free(argv1);
     g_free (argv);
 
     if (ret == -1)
@@ -534,8 +582,21 @@ launch_default_shell:
     return 0;
 }
 
+#ifdef VTE_291
+static void eof_cb (GtkWidget *widget, gpointer data) {
+    DEBUG_FUNCTION ("eof_cb");
+    DEBUG_ASSERT (widget != NULL);
+    DEBUG_ASSERT (data != NULL);
 
+    child_exited_cb (widget, 0, data);
+}
+#endif
+
+#ifdef VTE_290
 static void child_exited_cb (GtkWidget *widget, gpointer data)
+#else
+static void child_exited_cb (GtkWidget *widget, gint status, gpointer data)
+#endif
 {
     DEBUG_FUNCTION ("child_exited_cb");
     DEBUG_ASSERT (widget != NULL);
@@ -585,22 +646,31 @@ static gint tilda_term_config_defaults (tilda_term *tt)
 {
     DEBUG_FUNCTION ("tilda_term_config_defaults");
     DEBUG_ASSERT (tt != NULL);
-
-    gdouble transparency_level = 0.0;
-    GdkRGBA fg, bg;
+    GdkRGBA fg, bg, cc;
     gchar* word_chars;
     gint i;
+    gint cursor_shape;
 
     /** Colors & Palette **/
     bg.red   =    GUINT16_TO_FLOAT(config_getint ("back_red"));
     bg.green =    GUINT16_TO_FLOAT(config_getint ("back_green"));
     bg.blue  =    GUINT16_TO_FLOAT(config_getint ("back_blue"));
+#ifdef VTE_290
     bg.alpha =    1.0;
+    gdouble transparency_level = 0.0;
+#else
+    bg.alpha =    (config_getbool("enable_transparency") ? GUINT16_TO_FLOAT(config_getint ("back_alpha")) : 1.0);
+#endif
 
     fg.red   =    GUINT16_TO_FLOAT(config_getint ("text_red"));
     fg.green =    GUINT16_TO_FLOAT(config_getint ("text_green"));
     fg.blue  =    GUINT16_TO_FLOAT(config_getint ("text_blue"));
     fg.alpha =    1.0;
+
+    cc.red   =    GUINT16_TO_FLOAT(config_getint ("cursor_red"));
+    cc.green =    GUINT16_TO_FLOAT(config_getint ("cursor_green"));
+    cc.blue  =    GUINT16_TO_FLOAT(config_getint ("cursor_blue"));
+    cc.alpha = 1.0;
 
     for(i = 0;i < TERMINAL_PALETTE_SIZE; i++) {
         current_palette[i].red   = GUINT16_TO_FLOAT(config_getnint ("palette", i*3));
@@ -613,14 +683,25 @@ static gint tilda_term_config_defaults (tilda_term *tt)
 
     /** Bells **/
     vte_terminal_set_audible_bell (VTE_TERMINAL(tt->vte_term), config_getbool ("bell"));
+#ifdef VTE_290
     vte_terminal_set_visible_bell (VTE_TERMINAL(tt->vte_term), config_getbool ("bell"));
-
+#endif
     /** Cursor **/
     vte_terminal_set_cursor_blink_mode (VTE_TERMINAL(tt->vte_term),
             (config_getbool ("blinks"))?VTE_CURSOR_BLINK_ON:VTE_CURSOR_BLINK_OFF);
+    vte_terminal_set_color_cursor_rgba (VTE_TERMINAL(tt->vte_term), &cc);
+
+    cursor_shape = config_getint("cursor_shape");
+    if (cursor_shape < 0 || cursor_shape > 2) {
+        config_setint("cursor_shape", 0);
+        cursor_shape = 0;
+    }
+    vte_terminal_set_cursor_shape(VTE_TERMINAL(tt->vte_term), (VteTerminalCursorShape)cursor_shape);
 
     /** Scrolling **/
+#ifdef VTE_290
     vte_terminal_set_scroll_background (VTE_TERMINAL(tt->vte_term), config_getbool ("scroll_background"));
+#endif
     vte_terminal_set_scroll_on_output (VTE_TERMINAL(tt->vte_term), config_getbool ("scroll_on_output"));
     vte_terminal_set_scroll_on_keystroke (VTE_TERMINAL(tt->vte_term), config_getbool ("scroll_on_key"));
 
@@ -635,7 +716,7 @@ static gint tilda_term_config_defaults (tilda_term *tt)
     vte_terminal_set_font (VTE_TERMINAL (tt->vte_term), description);
 
     /** Scrollback **/
-    vte_terminal_set_scrollback_lines (VTE_TERMINAL(tt->vte_term), config_getint ("lines"));
+    vte_terminal_set_scrollback_lines (VTE_TERMINAL(tt->vte_term), config_getbool("scroll_history_infinite") ? -1 : config_getint ("lines"));
 
     /** Keys **/
     switch (config_getint ("backspace_key"))
@@ -674,8 +755,17 @@ static gint tilda_term_config_defaults (tilda_term *tt)
 
     /** Word chars **/
     word_chars =  config_getstr ("word_chars");
-    if (NULL == word_chars || '\0' == word_chars)
+    if (NULL == word_chars || '\0' == *word_chars) {
         word_chars = DEFAULT_WORD_CHARS;
+    }
+
+    /**
+     * The word_chars feature was removed from VTE in 38.x and reintroduced with a different API function in VTE
+     * 40.x, so we need the following compile guards to ensure we only include the word_chars feature in the
+     * supported versions.
+     **/
+
+#ifdef VTE_290 /* VTE 2.90 only */
     vte_terminal_set_word_chars (VTE_TERMINAL(tt->vte_term), word_chars);
 
     /** Background **/
@@ -683,7 +773,6 @@ static gint tilda_term_config_defaults (tilda_term *tt)
         vte_terminal_set_background_image_file (VTE_TERMINAL(tt->vte_term), config_getstr ("image"));
     else
         vte_terminal_set_background_image_file (VTE_TERMINAL(tt->vte_term), NULL);
-
     transparency_level = ((gdouble) config_getint ("transparency"))/100;
 
     if (config_getbool ("enable_transparency") && transparency_level > 0)
@@ -692,48 +781,57 @@ static gint tilda_term_config_defaults (tilda_term *tt)
         vte_terminal_set_opacity (VTE_TERMINAL (tt->vte_term), (1.0 - transparency_level) * 0xffff);
         vte_terminal_set_background_transparent (VTE_TERMINAL(tt->vte_term), !tt->tw->have_argb_visual);
     }
-
+#else
+    #if VTE_MINOR_VERSION >= 40
+        vte_terminal_set_word_char_exceptions (VTE_TERMINAL (tt->vte_term), word_chars);
+    #endif
+#endif
     return 0;
 }
 
 static void
-menu_copy_cb (GtkWidget *widget, gpointer data)
+menu_copy_cb (GSimpleAction *action,
+              GVariant      *parameter,
+              gpointer       user_data)
 {
     DEBUG_FUNCTION ("menu_copy_cb");
-    DEBUG_ASSERT (widget != NULL);
-    DEBUG_ASSERT (data != NULL);
+    DEBUG_ASSERT (user_data != NULL);
 
-    tilda_term *tt = TILDA_TERM(data);
+    tilda_term *tt = TILDA_TERM(user_data);
 
     vte_terminal_copy_clipboard (VTE_TERMINAL (tt->vte_term));
 }
 
 static void
-menu_paste_cb (GtkWidget *widget, gpointer data)
+menu_paste_cb (GSimpleAction *action,
+               GVariant      *parameter,
+               gpointer       user_data)
 {
     DEBUG_FUNCTION ("menu_paste_cb");
-    DEBUG_ASSERT (widget != NULL);
-    DEBUG_ASSERT (data != NULL);
+    DEBUG_ASSERT (user_data != NULL);
 
-    tilda_term *tt = TILDA_TERM(data);
+    tilda_term *tt = TILDA_TERM(user_data);
 
     vte_terminal_paste_clipboard (VTE_TERMINAL (tt->vte_term));
 }
 
 
 static void
-menu_preferences_cb (GtkWidget *widget, gpointer data)
+menu_preferences_cb (GSimpleAction *action,
+                     GVariant      *parameter,
+                     gpointer       user_data)
 {
     DEBUG_FUNCTION ("menu_config_cb");
-    DEBUG_ASSERT (widget != NULL);
-    DEBUG_ASSERT (data != NULL);
+    DEBUG_ASSERT (user_data != NULL);
 
     /* Show the config wizard */
-    wizard (TILDA_WINDOW(data));
+    wizard (TILDA_WINDOW(user_data));
 }
 
 static void
-menu_quit_cb (G_GNUC_UNUSED GtkWidget *widget, G_GNUC_UNUSED gpointer data)
+menu_quit_cb (GSimpleAction *action,
+              GVariant      *parameter,
+              gpointer       user_data)
 {
     DEBUG_FUNCTION ("menu_quit_cb");
 
@@ -741,42 +839,58 @@ menu_quit_cb (G_GNUC_UNUSED GtkWidget *widget, G_GNUC_UNUSED gpointer data)
 }
 
 static void
-menu_add_tab_cb (GtkWidget *widget, gpointer data)
+menu_add_tab_cb (GSimpleAction *action,
+                 GVariant      *parameter,
+                 gpointer       user_data)
 {
     DEBUG_FUNCTION ("menu_add_tab_cb");
-    DEBUG_ASSERT (widget != NULL);
-    DEBUG_ASSERT (data != NULL);
+    DEBUG_ASSERT (user_data != NULL);
 
-    tilda_window_add_tab (TILDA_WINDOW(data));
+    tilda_window_add_tab (TILDA_WINDOW(user_data));
 }
 
 static void
-menu_fullscreen_cb (GtkWidget *widget, gpointer data)
+menu_fullscreen_cb (GSimpleAction *action,
+                    GVariant      *parameter,
+                    gpointer       user_data)
 {
     DEBUG_FUNCTION ("menu_fullscreen_cb");
-    DEBUG_ASSERT (widget != NULL);
-    DEBUG_ASSERT (data != NULL);
+    DEBUG_ASSERT (user_data != NULL);
 
-    toggle_fullscreen_cb (TILDA_WINDOW(data));
+    toggle_fullscreen_cb (TILDA_WINDOW(user_data));
 }
 
 static void
-menu_close_tab_cb (GtkWidget *widget, gpointer data)
+menu_searchbar_cb(GSimpleAction *action,
+                    GVariant      *parameter,
+                    gpointer       user_data)
 {
-    DEBUG_FUNCTION ("menu_close_tab_cb");
-    DEBUG_ASSERT (widget != NULL);
-    DEBUG_ASSERT (data != NULL);
+    DEBUG_FUNCTION ("menu_fullscreen_cb");
+    DEBUG_ASSERT (user_data != NULL);
 
-    tilda_window_close_current_tab (TILDA_WINDOW(data));
+    tilda_window_toggle_searchbar (TILDA_WINDOW(user_data));
 }
 
-static void on_popup_hide (GtkWidget *widget, gpointer data)
+static void
+menu_close_tab_cb (GSimpleAction *action,
+                   GVariant      *parameter,
+                   gpointer       user_data)
+{
+    DEBUG_FUNCTION ("menu_close_tab_cb");
+    DEBUG_ASSERT (user_data != NULL);
+
+    tilda_window_close_current_tab (TILDA_WINDOW(user_data));
+}
+
+static void on_popup_hide (GtkWidget *widget, tilda_window *tw)
 {
     DEBUG_FUNCTION("on_popup_hide");
     DEBUG_ASSERT(widget != NULL);
-    DEBUG_ASSERT(data != NULL);
+    DEBUG_ASSERT(tw != NULL);
 
-    tilda_window *tw = TILDA_WINDOW(data);
+    GAction *action = g_action_map_lookup_action (G_ACTION_MAP (tw->action_group), "close-tab");
+    g_simple_action_set_enabled (G_SIMPLE_ACTION (action), FALSE);
+
     tw->disable_auto_hide = FALSE;
 }
 
@@ -786,78 +900,97 @@ static void popup_menu (tilda_window *tw, tilda_term *tt)
     DEBUG_ASSERT (tw != NULL);
     DEBUG_ASSERT (tt != NULL);
 
-    GtkAction *action;
-    GtkActionGroup *action_group;
-    GtkUIManager *ui_manager;
-    GError *error = NULL;
-    GtkWidget *menu;
+    static const gchar menu_str[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+            "<interface>\n"
+            "  <menu id=\"menu\">\n"
+            "    <section>\n"
+            "      <item>\n"
+            "        <attribute name=\"label\" translatable=\"yes\">_New Tab</attribute>\n"
+            "        <attribute name=\"action\">window.new-tab</attribute>\n"
+            "      </item>\n"
+            "      <item>\n"
+            "        <attribute name=\"label\" translatable=\"yes\">_Close Tab</attribute>\n"
+            "        <attribute name=\"action\">window.close-tab</attribute>\n"
+            "      </item>\n"
+            "    </section>\n"
+            "    <section>\n"
+            "      <item>\n"
+            "        <attribute name=\"label\" translatable=\"yes\">_Copy</attribute>\n"
+            "        <attribute name=\"action\">window.copy</attribute>\n"
+            "      </item>\n"
+            "      <item>\n"
+            "        <attribute name=\"label\" translatable=\"yes\">_Paste</attribute>\n"
+            "        <attribute name=\"action\">window.paste</attribute>\n"
+            "      </item>\n"
+            "    </section> \n"
+            "    <section>\n"
+            "      <item>\n"
+            "        <attribute name=\"label\" translatable=\"yes\">_Toggle Fullscreen</attribute>\n"
+            "        <attribute name=\"action\">window.fullscreen</attribute>\n"
+            "      </item>\n"
+            "      <item>\n"
+            "        <attribute name=\"label\" translatable=\"yes\">_Toggle Searchbar</attribute>\n"
+            "        <attribute name=\"action\">window.searchbar</attribute>\n"
+            "      </item>\n"
+            "    </section> \n"
+            "    <section>\n"
+            "      <item>\n"
+            "        <attribute name=\"label\" translatable=\"yes\">_Preferences</attribute>\n"
+            "        <attribute name=\"action\">window.preferences</attribute>\n"
+            "      </item>\n"
+            "    </section> \n"
+            "    <section>\n"
+            "      <item>\n"
+            "        <attribute name=\"label\" translatable=\"yes\">_Quit</attribute>\n"
+            "        <attribute name=\"action\">window.quit</attribute>\n"
+            "      </item>\n"
+            "    </section> \n"
+            "  </menu>\n"
+            "</interface>";
 
-    /* Just use a static string here to initialize the GtkUIManager,
-     * rather than installing and reading from a file all the time. */
-    static const gchar menu_str[] =
-        "<ui>"
-            "<popup name=\"popup-menu\">"
-                "<menuitem action=\"new-tab\" />"
-                "<menuitem action=\"close-tab\" />"
-                "<separator />"
-                "<menuitem action=\"copy\" />"
-                "<menuitem action=\"paste\" />"
-                "<separator />"
-                "<menuitem action=\"fullscreen\" />"
-                "<separator />"
-                "<menuitem action=\"preferences\" />"
-                "<separator />"
-                "<menuitem action=\"quit\" />"
-            "</popup>"
-        "</ui>";
+    GtkBuilder *builder = gtk_builder_new();
+    gtk_builder_add_from_string(builder, menu_str, strlen(menu_str), NULL);
 
     /* Create the action group */
-    action_group = gtk_action_group_new ("popup-menu-action-group");
+    GSimpleActionGroup *action_group = g_simple_action_group_new();
+    tw->action_group = action_group;
 
-    /* Add Actions and connect callbacks */
-    action = gtk_action_new ("new-tab", _("_New Tab"), NULL, GTK_STOCK_ADD);
-    gtk_action_group_add_action_with_accel (action_group, action, config_getstr("addtab_key"));
-    g_signal_connect (G_OBJECT(action), "activate", G_CALLBACK(menu_add_tab_cb), tw);
+    /* We need two different lists of entries because the
+     * because the actions have different scope, some concern the
+     * tilda_window and others concern the current terminal, so
+     * when we add them to the action_group we need to pass different
+     * user_data (tw or tt).
+     *
+     * Note: Using designated initializers here, allows us to skip the remaining fields which are NULL anyway and
+     * also gets rid of missing field initializer warnings.
+     */
+    GActionEntry entries_for_tilda_window[] = {
+        { .name="new-tab", menu_add_tab_cb },
+        { .name="close-tab", menu_close_tab_cb },
+        { .name="fullscreen", menu_fullscreen_cb },
+        { .name="searchbar", menu_searchbar_cb },
+        { .name="preferences", menu_preferences_cb },
+        { .name="quit", menu_quit_cb }
+    };
 
-    action = gtk_action_new ("close-tab", _("_Close Tab"), NULL, GTK_STOCK_CLOSE);
-    gtk_action_group_add_action_with_accel (action_group, action, config_getstr("closetab_key"));
-    g_signal_connect (G_OBJECT(action), "activate", G_CALLBACK(menu_close_tab_cb), tw);
+    GActionEntry entries_for_tilda_terminal[] = {
+        { .name="copy", menu_copy_cb},
+        { .name="paste", menu_paste_cb}
+    };
 
-    action = gtk_action_new ("copy", NULL, NULL, GTK_STOCK_COPY);
-    gtk_action_group_add_action_with_accel (action_group, action, config_getstr("copy_key"));
-    g_signal_connect (G_OBJECT(action), "activate", G_CALLBACK(menu_copy_cb), tt);
+    g_action_map_add_action_entries(G_ACTION_MAP(action_group),
+            entries_for_tilda_window, G_N_ELEMENTS(entries_for_tilda_window), tw);
+    g_action_map_add_action_entries(G_ACTION_MAP(action_group),
+            entries_for_tilda_terminal, G_N_ELEMENTS(entries_for_tilda_terminal), tt);
 
-    action = gtk_action_new ("paste", NULL, NULL, GTK_STOCK_PASTE);
-    gtk_action_group_add_action_with_accel (action_group, action, config_getstr("paste_key"));
-    g_signal_connect (G_OBJECT(action), "activate", G_CALLBACK(menu_paste_cb), tt);
+    gtk_widget_insert_action_group(tw->window, "window", G_ACTION_GROUP(action_group));
 
-    action = gtk_action_new ("fullscreen", _("Toggle fullscreen"), NULL, NULL);
-    gtk_action_group_add_action (action_group, action);
-    g_signal_connect (G_OBJECT(action), "activate", G_CALLBACK(menu_fullscreen_cb), tw);
+    GMenuModel *menu_model = G_MENU_MODEL(gtk_builder_get_object(builder, "menu"));
+    GtkWidget *menu = gtk_menu_new_from_model(menu_model);
+    gtk_menu_attach_to_widget(GTK_MENU(menu), tw->window, NULL);
 
-    action = gtk_action_new ("preferences", NULL, NULL, GTK_STOCK_PREFERENCES);
-    gtk_action_group_add_action (action_group, action);
-    g_signal_connect (G_OBJECT(action), "activate", G_CALLBACK(menu_preferences_cb), tw);
-
-    action = gtk_action_new ("quit", NULL, NULL, GTK_STOCK_QUIT);
-    gtk_action_group_add_action_with_accel (action_group, action, config_getstr("quit_key"));
-    g_signal_connect (G_OBJECT(action), "activate", G_CALLBACK(menu_quit_cb), tw);
-
-    /* Create and add actions to the GtkUIManager */
-    ui_manager = gtk_ui_manager_new ();
-    gtk_ui_manager_insert_action_group (ui_manager, action_group, 0);
-    gtk_ui_manager_add_ui_from_string (ui_manager, menu_str, -1, &error);
-
-    /* Check for an error (REALLY REALLY unlikely, unless the developers screwed up */
-    if (error)
-    {
-        DEBUG_ERROR ("GtkUIManager problem\n");
-        g_printerr ("Error message: %s\n", error->message);
-        g_error_free (error);
-    }
-
-    /* Get the popup menu out of the GtkUIManager */
-    menu = gtk_ui_manager_get_widget (ui_manager, "/ui/popup-menu");
+    gtk_menu_set_accel_group(GTK_MENU(menu), tw->accel_group);
+    gtk_menu_set_accel_path(GTK_MENU(menu), "<tilda>/context");
 
     /* Disable auto hide */
     tw->disable_auto_hide = TRUE;
@@ -865,7 +998,6 @@ static void popup_menu (tilda_window *tw, tilda_term *tt)
 
     /* Display the menu */
     gtk_menu_popup (GTK_MENU(menu), NULL, NULL, NULL, NULL, 3, gtk_get_current_event_time());
-    gtk_widget_show_all(menu);
 }
 
 static int button_press_cb (G_GNUC_UNUSED GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -899,11 +1031,8 @@ static int button_press_cb (G_GNUC_UNUSED GtkWidget *widget, GdkEventButton *eve
             break;
         case 1: /* Left Click */
             terminal  = VTE_TERMINAL(tt->vte_term);
-            GtkBorder border;
-            gtk_widget_style_get (GTK_WIDGET (terminal),
-                "inner-border", &border, NULL);
+            ypad = gtk_widget_get_margin_bottom(GTK_WIDGET(terminal));
 
-            ypad = border.bottom;
             match = vte_terminal_match_check (terminal,
                     (event->x - ypad) /
                     vte_terminal_get_char_width (terminal),
@@ -931,12 +1060,10 @@ static int button_press_cb (G_GNUC_UNUSED GtkWidget *widget, GdkEventButton *eve
                     TILDA_PERROR ();
                 }
 
+                g_free (web_browser_cmd);
                 g_free (cmd);
-            }
-
-            /* Always free match if it is non NULL */
-            if (match)
                 g_free (match);
+            }
 
             break;
         default:
